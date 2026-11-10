@@ -34,6 +34,7 @@ export type VoiceCommandIntent =
   | 'VIEW_MODE_SPLIT'
   | 'RESET_3D_VIEW'
   | 'TOGGLE_3D_HOLO'
+  | 'OPEN_TUTORIAL'
   | 'UNKNOWN';
 
 export interface VoiceCommandResult {

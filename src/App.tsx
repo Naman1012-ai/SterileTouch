@@ -12,6 +12,7 @@ import { AuditLogModal } from './components/checklist/AuditLogModal';
 import { GesturesHelpModal } from './components/hud/GesturesHelpModal';
 import { DicomDropzoneModal } from './components/viewer/DicomDropzoneModal';
 import { DicomMetadataDrawer } from './components/viewer/DicomMetadataDrawer';
+import { DoctorOnboardingTutorial } from './components/onboarding/DoctorOnboardingTutorial';
 
 import { MOCK_PATIENTS } from './data/mockPatients';
 import { MOCK_SCANS } from './data/mockScans';
@@ -41,6 +42,13 @@ export const App: React.FC = () => {
   const [isHelpModalOpen, setIsHelpModalOpen] = useState<boolean>(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState<boolean>(false);
   const [isMetadataDrawerOpen, setIsMetadataDrawerOpen] = useState<boolean>(false);
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('steriletouch_onboarded') !== 'true';
+    } catch {
+      return false;
+    }
+  });
   const [isMuted, setIsMuted] = useState<boolean>(false);
 
   // Dynamic Uploaded DICOM & Image series
@@ -223,11 +231,15 @@ export const App: React.FC = () => {
         case 'SHOW_HELP':
           setIsHelpModalOpen(true);
           break;
+        case 'OPEN_TUTORIAL':
+          setIsOnboardingOpen(true);
+          break;
         case 'CLOSE_MODAL':
           setIsHelpModalOpen(false);
           setIsAuditModalOpen(false);
           setIsUploadModalOpen(false);
           setIsMetadataDrawerOpen(false);
+          setIsOnboardingOpen(false);
           break;
         case 'TOGGLE_FULLSCREEN':
           if (!document.fullscreenElement) {
@@ -509,6 +521,7 @@ export const App: React.FC = () => {
         isMuted={isMuted}
         onToggleMute={handleToggleMute}
         onOpenHelp={() => setIsHelpModalOpen(true)}
+        onOpenTutorial={() => setIsOnboardingOpen(true)}
       />
 
       {/* Navigation Bar & Case Switcher */}
@@ -607,6 +620,19 @@ export const App: React.FC = () => {
         isOpen={isMetadataDrawerOpen}
         onClose={() => setIsMetadataDrawerOpen(false)}
         metadata={activeScan.dicomMetadata}
+      />
+
+      {/* Doctor Onboarding & Interactive Calibration Tutorial */}
+      <DoctorOnboardingTutorial
+        isOpen={isOnboardingOpen}
+        onClose={() => setIsOnboardingOpen(false)}
+        gestureResult={gestureResult}
+        cursor={cursor}
+        landmarks={landmarks}
+        metrics={metrics}
+        isCameraActive={isCameraActive}
+        onStartCamera={startCamera}
+        voiceCommand={lastVoiceCommand}
       />
     </div>
   );

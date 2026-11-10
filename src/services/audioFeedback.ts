@@ -183,6 +183,14 @@ class AudioFeedbackService {
     });
   }
 
+  public playSuccess() {
+    this.playChime();
+  }
+
+  public playWarning() {
+    this.playLock();
+  }
+
   /**
    * Sterile freeze engagement tone (descending)
    */

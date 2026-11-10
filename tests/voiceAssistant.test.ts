@@ -101,7 +101,12 @@ const testCases = [
   { input: 'reset 3d', expectedIntent: 'RESET_3D_VIEW' },
   { input: 'toggle hologram', expectedIntent: 'TOGGLE_3D_HOLO' },
 
-  // 13. Unknown/Ambient conversation
+  // 13. Onboarding & Calibration Tutorial
+  { input: 'open tutorial', expectedIntent: 'OPEN_TUTORIAL' },
+  { input: 'start calibration', expectedIntent: 'OPEN_TUTORIAL' },
+  { input: 'onboarding', expectedIntent: 'OPEN_TUTORIAL' },
+
+  // 14. Unknown/Ambient conversation
   { input: 'pass me the scalpels please', expectedIntent: 'UNKNOWN' },
 ];
 

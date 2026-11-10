@@ -418,6 +418,12 @@ export class VoiceAssistantService {
     ) {
       intent = 'TOGGLE_METADATA_DRAWER';
     } else if (
+      /(open tutorial|start tutorial|show tutorial|open onboarding|start onboarding|calibrate gestures|start calibration|calibration mode|\btutorial\b|\bonboarding\b)/i.test(
+        clean
+      )
+    ) {
+      intent = 'OPEN_TUTORIAL';
+    } else if (
       /(open gestures|show gestures|gestures guide|gestures help|open help|show help|command guide|\bhelp\b|\bgestures\b|shortcuts)/i.test(
         clean
       )
@@ -660,6 +666,9 @@ export class VoiceAssistantService {
         break;
       case 'TOGGLE_3D_HOLO':
         this.speak('Hand tilt toggled');
+        break;
+      case 'OPEN_TUTORIAL':
+        this.speak('Opening touchless tutorial and calibration');
         break;
       case 'SHOW_HELP':
         this.speak('Commands guide');

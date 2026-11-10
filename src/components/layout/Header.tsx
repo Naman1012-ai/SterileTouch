@@ -6,6 +6,7 @@ import {
   Maximize2,
   Minimize2,
   ShieldCheck,
+  Sparkles,
   Volume2,
   VolumeX,
 } from 'lucide-react';
@@ -18,6 +19,7 @@ interface HeaderProps {
   isMuted: boolean;
   onToggleMute: () => void;
   onOpenHelp: () => void;
+  onOpenTutorial?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -25,6 +27,7 @@ export const Header: React.FC<HeaderProps> = ({
   isMuted,
   onToggleMute,
   onOpenHelp,
+  onOpenTutorial,
 }) => {
   const [time, setTime] = useState<string>('');
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
@@ -129,6 +132,19 @@ export const Header: React.FC<HeaderProps> = ({
           <HelpCircle className="w-4 h-4 text-cyan-400" />
           <span className="hidden sm:inline">Gestures</span>
         </button>
+
+        {/* Doctor Onboarding & Calibration Tutorial */}
+        {onOpenTutorial && (
+          <button
+            onClick={onOpenTutorial}
+            data-touchless-clickable="true"
+            title="Doctor Onboarding Tutorial & Touchless Calibration"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-emerald-900/60 bg-emerald-950/40 text-emerald-300 hover:text-emerald-200 hover:border-emerald-500/50 text-xs font-medium transition shadow-[0_0_8px_rgba(16,185,129,0.15)]"
+          >
+            <Sparkles className="w-4 h-4 text-emerald-400" />
+            <span className="hidden sm:inline">Tutorial</span>
+          </button>
+        )}
 
         {/* Fullscreen Toggle */}
         <button
