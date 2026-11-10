@@ -94,7 +94,14 @@ const testCases = [
   { input: 'show metadata', expectedIntent: 'TOGGLE_METADATA_DRAWER' },
   { input: 'pacs tags', expectedIntent: 'TOGGLE_METADATA_DRAWER' },
 
-  // 12. Unknown/Ambient conversation
+  // 12. 3D Volumetric Mesh & Layout Views
+  { input: 'show 3d', expectedIntent: 'VIEW_MODE_3D' },
+  { input: 'split screen', expectedIntent: 'VIEW_MODE_SPLIT' },
+  { input: 'show 2d', expectedIntent: 'VIEW_MODE_2D' },
+  { input: 'reset 3d', expectedIntent: 'RESET_3D_VIEW' },
+  { input: 'toggle hologram', expectedIntent: 'TOGGLE_3D_HOLO' },
+
+  // 13. Unknown/Ambient conversation
   { input: 'pass me the scalpels please', expectedIntent: 'UNKNOWN' },
 ];
 

@@ -254,11 +254,17 @@ export class VoiceAssistantService {
       clean.includes('previous slice')
     ) {
       intent = 'PREV_SLICE';
-    } else if (/(?:go to|show|slice|layer)\s+(\d+)/i.test(clean)) {
-      const match = clean.match(/(?:go to|show|slice|layer)\s+(\d+)/i);
+    } else if (
+      /(?:go to\s+(?:slice\s+)?|show\s+slice\s+|slice\s+|layer\s+)(\d+)\b|(?:show\s+(\d+)\b(?!d\b))/i.test(
+        clean
+      )
+    ) {
+      const match = clean.match(
+        /(?:go to\s+(?:slice\s+)?|show\s+slice\s+|slice\s+|layer\s+)(\d+)\b|(?:show\s+(\d+)\b(?!d\b))/i
+      );
       if (match) {
         intent = 'GO_TO_SLICE';
-        params.sliceNumber = parseInt(match[1], 10);
+        params.sliceNumber = parseInt(match[1] || match[2], 10);
       }
     }
 
@@ -387,7 +393,19 @@ export class VoiceAssistantService {
     }
 
     // 9. Gestures Help & Modal Dismissal (e.g. "open gestures", "show gestures", "close guide")
-    else if (
+    else if (/(split screen|split view|show both|dual view|two view)/i.test(clean)) {
+      intent = 'VIEW_MODE_SPLIT';
+    } else if (
+      /(show 3d|switch to 3d|3d view|3d model|open 3d|three d|3d reconstruction)/i.test(clean)
+    ) {
+      intent = 'VIEW_MODE_3D';
+    } else if (/(show 2d|switch to 2d|2d view|2d slice|slice view|two d)/i.test(clean)) {
+      intent = 'VIEW_MODE_2D';
+    } else if (/(reset 3d|center 3d|recenter 3d)/i.test(clean)) {
+      intent = 'RESET_3D_VIEW';
+    } else if (/(toggle hologram|hologram mode|hand tilt mode|toggle hand tilt)/i.test(clean)) {
+      intent = 'TOGGLE_3D_HOLO';
+    } else if (
       /(upload scan|upload dicom|import scan|import dicom|load scan|load dicom|open dropzone|add scan)/i.test(
         clean
       )
@@ -627,6 +645,21 @@ export class VoiceAssistantService {
         break;
       case 'TOGGLE_METADATA_DRAWER':
         this.speak('PACS metadata toggled');
+        break;
+      case 'VIEW_MODE_SPLIT':
+        this.speak('Split screen active');
+        break;
+      case 'VIEW_MODE_3D':
+        this.speak('Three-D volumetric reconstruction');
+        break;
+      case 'VIEW_MODE_2D':
+        this.speak('Two-D slice workstation');
+        break;
+      case 'RESET_3D_VIEW':
+        this.speak('Three-D view centered');
+        break;
+      case 'TOGGLE_3D_HOLO':
+        this.speak('Hand tilt toggled');
         break;
       case 'SHOW_HELP':
         this.speak('Commands guide');

@@ -29,6 +29,11 @@ export type VoiceCommandIntent =
   | 'TOGGLE_FULLSCREEN'
   | 'OPEN_UPLOAD_MODAL'
   | 'TOGGLE_METADATA_DRAWER'
+  | 'VIEW_MODE_2D'
+  | 'VIEW_MODE_3D'
+  | 'VIEW_MODE_SPLIT'
+  | 'RESET_3D_VIEW'
+  | 'TOGGLE_3D_HOLO'
   | 'UNKNOWN';
 
 export interface VoiceCommandResult {

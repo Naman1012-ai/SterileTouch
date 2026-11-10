@@ -531,6 +531,7 @@ export const App: React.FC = () => {
           <MedicalViewer
             scan={activeScan}
             cursor={cursor}
+            landmarks={landmarks}
             voiceCommand={lastVoiceCommand}
             onOpenUploadModal={() => setIsUploadModalOpen(true)}
             onToggleMetadataDrawer={() => setIsMetadataDrawerOpen((prev) => !prev)}
