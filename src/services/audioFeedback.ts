@@ -27,6 +27,39 @@ class AudioFeedbackService {
     return this.isMuted;
   }
 
+  public ensureUnlocked() {
+    this.getContext();
+  }
+
+  /**
+   * High-tech clinical voice acknowledgement chime (Fast ascending dual harmonic)
+   * Plays when a voice command is executed when spoken verbal reply is toggled off
+   */
+  public playVoiceAckChime() {
+    const ctx = this.getContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    const tones = [587.33, 880.0]; // D5 and A5
+
+    tones.forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.04);
+
+      gain.gain.setValueAtTime(0.08, now + idx * 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.04 + 0.16);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(now + idx * 0.04);
+      osc.stop(now + idx * 0.04 + 0.16);
+    });
+  }
+
   /**
    * Subtle micro-click for slice scrubbing or fine adjustments
    */

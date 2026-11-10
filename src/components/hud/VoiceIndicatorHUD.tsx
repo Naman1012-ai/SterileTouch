@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { VoiceAssistantStatus, VoiceCommandResult } from '../../types/speech';
 import { voiceAssistantService } from '../../services/voiceAssistant';
+import { audioService } from '../../services/audioFeedback';
 
 export const VoiceIndicatorHUD: React.FC = () => {
   const [status, setStatus] = useState<VoiceAssistantStatus>(
@@ -45,10 +46,12 @@ export const VoiceIndicatorHUD: React.FC = () => {
   }, []);
 
   const toggleMic = () => {
+    audioService.ensureUnlocked();
     voiceAssistantService.toggleListening();
   };
 
   const toggleSpeechResponse = () => {
+    audioService.ensureUnlocked();
     voiceAssistantService.setSpeechResponseEnabled(!status.speechResponseEnabled);
   };
 

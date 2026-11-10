@@ -24,6 +24,7 @@ export class VoiceAssistantService {
   private lastExecutedIntent: VoiceCommandIntent | null = null;
   private lastExecutedPhrase: string = '';
   private lastExecutedTime: number = 0;
+  private lastSpokenEndTime: number = 0;
   private readonly FAST_TRIGGER_DEBOUNCE_MS: number = 850;
 
   // SpeechSynthesis voice selection cache
@@ -92,6 +93,14 @@ export class VoiceAssistantService {
       };
 
       this.recognition.onresult = (event: any) => {
+        const now = performance.now();
+
+        // Echo Cancellation: Ignore microphone while computer voice is speaking
+        // or within 650ms after speech ends (prevents laptop speaker acoustic loop)
+        if (this.isSpeaking || now - this.lastSpokenEndTime < 650) {
+          return;
+        }
+
         let interimTranscript = '';
         let finalTranscript = '';
 
@@ -112,15 +121,12 @@ export class VoiceAssistantService {
 
         // FAST-TRIGGER: Evaluate intent on every speech chunk (<50ms execution)
         const recognized = this.parseIntent(currentText);
-        const now = performance.now();
 
         if (recognized.intent !== 'UNKNOWN') {
-          const isSameCommand =
-            this.lastExecutedIntent === recognized.intent &&
-            (this.lastExecutedPhrase === recognized.matchedPhrase ||
-              now - this.lastExecutedTime < this.FAST_TRIGGER_DEBOUNCE_MS);
+          // Debounce condition: wait at least 850ms between commands
+          const isDebounced = now - this.lastExecutedTime < this.FAST_TRIGGER_DEBOUNCE_MS;
 
-          if (!isSameCommand) {
+          if (!isDebounced) {
             this.lastExecutedIntent = recognized.intent;
             this.lastExecutedPhrase = recognized.matchedPhrase;
             this.lastExecutedTime = now;
@@ -451,13 +457,19 @@ export class VoiceAssistantService {
 
   private executeCommand(result: VoiceCommandResult) {
     this.lastCommand = result;
-    audioService.playClick();
-    this.provideVerbalConfirmation(result);
     this.emitCommand(result);
+
+    if (this.speechResponseEnabled) {
+      this.provideVerbalConfirmation(result);
+    } else {
+      // Computer voice is toggled off: play high-tech confirmation chime!
+      audioService.playVoiceAckChime();
+    }
+
     this.emitStatus();
   }
 
-  // ROBUST SPEECH SYNTHESIS ENGINE (Audio Unlock + Auto-Resume)
+  // ROBUST SPEECH SYNTHESIS ENGINE (Audio Unlock + Auto-Resume + Echo Cancellation)
   public speak(text: string) {
     if (!this.speechResponseEnabled || typeof window === 'undefined' || !window.speechSynthesis) {
       return;
@@ -489,12 +501,14 @@ export class VoiceAssistantService {
 
       utterance.onend = () => {
         this.isSpeaking = false;
+        this.lastSpokenEndTime = performance.now();
         this.emitStatus();
       };
 
       utterance.onerror = (e) => {
         console.warn('Speech synthesis utterance error:', e);
         this.isSpeaking = false;
+        this.lastSpokenEndTime = performance.now();
         this.emitStatus();
       };
 
@@ -507,10 +521,14 @@ export class VoiceAssistantService {
           window.speechSynthesis.speak(utterance);
         } catch (innerErr) {
           console.warn('SpeechSynthesis speak failed:', innerErr);
+          this.isSpeaking = false;
+          this.lastSpokenEndTime = performance.now();
         }
       }, 20);
     } catch (err) {
       console.warn('Speech synthesis outer error:', err);
+      this.isSpeaking = false;
+      this.lastSpokenEndTime = performance.now();
     }
   }
 
