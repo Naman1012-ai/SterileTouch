@@ -3,6 +3,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Eye,
+  FileText,
   Layers,
   Maximize,
   Minus,
@@ -14,9 +15,12 @@ import {
   Sparkles,
   SunMedium,
   Trash2,
+  Upload,
 } from 'lucide-react';
 import { CaliperMeasurement, MedicalScanSeries, WindowPreset } from '../../types/medical';
 import { Point2D, VirtualCursorState } from '../../types/gestures';
+import { DecodedMedicalSlice } from '../../types/dicom';
+import { DicomParser } from '../../services/dicomParser';
 import { VoiceCommandResult } from '../../types/speech';
 import { audioService } from '../../services/audioFeedback';
 
@@ -25,6 +29,9 @@ interface MedicalViewerProps {
   cursor: VirtualCursorState;
   voiceCommand?: VoiceCommandResult | null;
   onSliceChange?: (slice: number) => void;
+  onOpenUploadModal?: () => void;
+  onToggleMetadataDrawer?: () => void;
+  isMetadataDrawerOpen?: boolean;
 }
 
 const WINDOW_PRESETS: WindowPreset[] = [
@@ -40,6 +47,9 @@ export const MedicalViewer: React.FC<MedicalViewerProps> = ({
   cursor,
   voiceCommand,
   onSliceChange,
+  onOpenUploadModal,
+  onToggleMetadataDrawer,
+  isMetadataDrawerOpen,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -53,6 +63,7 @@ export const MedicalViewer: React.FC<MedicalViewerProps> = ({
   const [isCaliperActive, setIsCaliperActive] = useState<boolean>(false);
   const [caliperPendingPoint, setCaliperPendingPoint] = useState<Point2D | null>(null);
   const [measurements, setMeasurements] = useState<CaliperMeasurement[]>([]);
+  const [isViewportDragOver, setIsViewportDragOver] = useState<boolean>(false);
 
   // Pinch 3D Spatial Pan & Zoom Tracking
   const lastCursorPos = useRef<Point2D | null>(null);
@@ -213,6 +224,12 @@ export const MedicalViewer: React.FC<MedicalViewerProps> = ({
         setShowAiOverlay((prev) => !prev);
         audioService.playClick();
         break;
+      case 'OPEN_UPLOAD_MODAL':
+        onOpenUploadModal?.();
+        break;
+      case 'TOGGLE_METADATA_DRAWER':
+        onToggleMetadataDrawer?.();
+        break;
     }
   }, [voiceCommand]);
 
@@ -305,7 +322,25 @@ export const MedicalViewer: React.FC<MedicalViewerProps> = ({
     const isLung = activePreset === 'LUNG';
 
     // RENDER ANATOMY ACCORDING TO CLINICAL CASE
-    if (scan.id === 'scan-001') {
+    if (scan.customSlices && scan.customSlices.length > 0) {
+      // REAL UPLOADED DICOM OR MEDICAL IMAGE
+      const customSlice = scan.customSlices[sliceIndex - 1] || scan.customSlices[0];
+
+      let ww = customSlice.windowWidth || 400;
+      let wc = customSlice.windowCenter || 40;
+      if (activePreset === 'BONE') {
+        ww = 1500;
+        wc = 300;
+      } else if (activePreset === 'SOFT_TISSUE') {
+        ww = 160;
+        wc = 35;
+      } else if (activePreset === 'LUNG') {
+        ww = 1500;
+        wc = -600;
+      }
+
+      renderDecodedDicomSlice(ctx, w, h, customSlice, ww, wc, isInvert);
+    } else if (scan.id === 'scan-001') {
       // BRAIN CT SLICE
       renderBrainCtSlice(ctx, w, h, sliceIndex, scan.totalSlices, {
         isInvert,
@@ -463,6 +498,39 @@ export const MedicalViewer: React.FC<MedicalViewerProps> = ({
 
         {/* Tools: Caliper, AI Overlays, Zoom Controls */}
         <div className="flex items-center gap-1.5">
+          {/* Upload DICOM & Metadata Inspector Buttons */}
+          <button
+            onClick={() => {
+              audioService.playClick();
+              onOpenUploadModal?.();
+            }}
+            data-touchless-clickable="true"
+            title="Upload DICOM (.dcm) or Medical Image"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-cyan-500/50 bg-cyan-950/70 hover:bg-cyan-900/80 text-cyan-300 text-[11px] font-semibold transition shadow-sm"
+          >
+            <Upload className="w-3.5 h-3.5" />
+            <span className="hidden md:inline">Upload Scan</span>
+          </button>
+
+          <button
+            onClick={() => {
+              audioService.playClick();
+              onToggleMetadataDrawer?.();
+            }}
+            data-touchless-clickable="true"
+            title="PACS DICOM Header Inspector"
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[11px] font-semibold transition ${
+              isMetadataDrawerOpen
+                ? 'border-indigo-400 bg-indigo-950 text-indigo-200 shadow-sm'
+                : 'border-slate-800 bg-slate-900 text-slate-300 hover:text-white'
+            }`}
+          >
+            <FileText className="w-3.5 h-3.5 text-indigo-400" />
+            <span className="hidden md:inline">DICOM Tags</span>
+          </button>
+
+          <div className="h-4 w-px bg-slate-800 hidden sm:block" />
+
           <button
             onClick={() => {
               setIsCaliperActive(!isCaliperActive);
@@ -555,7 +623,19 @@ export const MedicalViewer: React.FC<MedicalViewerProps> = ({
       <div
         ref={containerRef}
         onWheel={handleWheel}
-        className="flex-1 relative flex items-center justify-center overflow-hidden bg-black cursor-crosshair"
+        onDragOver={(e) => {
+          e.preventDefault();
+          setIsViewportDragOver(true);
+        }}
+        onDragLeave={() => setIsViewportDragOver(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setIsViewportDragOver(false);
+          onOpenUploadModal?.();
+        }}
+        className={`flex-1 relative flex items-center justify-center overflow-hidden bg-black cursor-crosshair transition-all ${
+          isViewportDragOver ? 'ring-4 ring-cyan-400 ring-inset bg-cyan-950/20' : ''
+        }`}
       >
         <canvas
           ref={canvasRef}
@@ -564,6 +644,19 @@ export const MedicalViewer: React.FC<MedicalViewerProps> = ({
           onClick={handleCanvasClick}
           className="max-w-full max-h-full aspect-4/3 block shadow-2xl"
         />
+
+        {/* Viewport Drag-and-Drop Active Overlay */}
+        {isViewportDragOver && (
+          <div className="absolute inset-0 bg-cyan-950/80 border-4 border-dashed border-cyan-400 flex flex-col items-center justify-center z-40 backdrop-blur-sm pointer-events-none animate-in fade-in duration-100">
+            <Upload className="w-16 h-16 text-cyan-300 animate-bounce mb-3" />
+            <h2 className="text-xl font-bold text-white tracking-tight">
+              Drop DICOM Files or Scans Here
+            </h2>
+            <p className="text-xs text-cyan-200 font-mono mt-1">
+              Release to parse and import directly into touchless viewer
+            </p>
+          </div>
+        )}
 
         {/* 3D Spatial Depth Pinch-to-Zoom & Pan Active Floating HUD Indicator */}
         {cursor.isPinching && !cursor.isFrozen && (
@@ -917,6 +1010,42 @@ function renderFemurFracture(
   ctx.fill();
 }
 
+function renderDecodedDicomSlice(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  slice: DecodedMedicalSlice,
+  windowWidth: number,
+  windowCenter: number,
+  invert: boolean
+) {
+  const imgData = DicomParser.renderSliceToImageData(
+    slice,
+    windowWidth,
+    windowCenter,
+    invert
+  );
+
+  const offCanvas = document.createElement('canvas');
+  offCanvas.width = slice.width;
+  offCanvas.height = slice.height;
+  const offCtx = offCanvas.getContext('2d');
+  if (offCtx) {
+    offCtx.putImageData(imgData, 0, 0);
+
+    const maxW = w * 0.88;
+    const maxH = h * 0.88;
+    const scale = Math.min(maxW / slice.width, maxH / slice.height);
+    const drawW = slice.width * scale;
+    const drawH = slice.height * scale;
+    const drawX = (w - drawW) / 2;
+    const drawY = (h - drawH) / 2;
+
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(offCanvas, drawX, drawY, drawW, drawH);
+  }
+}
+
 function renderMetadataHUD(
   ctx: CanvasRenderingContext2D,
   w: number,
@@ -930,9 +1059,18 @@ function renderMetadataHUD(
   ctx.font = '11px monospace';
 
   // Top Left Metadata
-  ctx.fillText(`ANAT: ${scan.anatomicalRegion}`, 16, 24);
-  ctx.fillText(`DATE: ${scan.acquisitionDate}`, 16, 40);
-  ctx.fillText(`FOV: 240mm | MATRIX: 512x512`, 16, 56);
+  const anatTitle = scan.dicomMetadata?.seriesDescription || scan.anatomicalRegion;
+  const dateStr = scan.dicomMetadata?.studyDate || scan.acquisitionDate;
+  const matrixStr = scan.dicomMetadata
+    ? `${scan.dicomMetadata.columns}x${scan.dicomMetadata.rows}`
+    : '512x512';
+  const patientTag = scan.dicomMetadata
+    ? `PT: ${scan.dicomMetadata.patientName.slice(0, 18)}`
+    : `PT: ${scan.patientId}`;
+
+  ctx.fillText(`ANAT: ${anatTitle}`, 16, 24);
+  ctx.fillText(`DATE: ${dateStr} | ${patientTag}`, 16, 40);
+  ctx.fillText(`MATRIX: ${matrixStr} | SPACING: ${scan.pixelSpacingMm.toFixed(2)}mm`, 16, 56);
 
   // Top Right Metadata
   ctx.textAlign = 'right';

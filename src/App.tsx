@@ -10,6 +10,8 @@ import { GestureBadge } from './components/hud/GestureBadge';
 import { VirtualCursor } from './components/hud/VirtualCursor';
 import { AuditLogModal } from './components/checklist/AuditLogModal';
 import { GesturesHelpModal } from './components/hud/GesturesHelpModal';
+import { DicomDropzoneModal } from './components/viewer/DicomDropzoneModal';
+import { DicomMetadataDrawer } from './components/viewer/DicomMetadataDrawer';
 
 import { MOCK_PATIENTS } from './data/mockPatients';
 import { MOCK_SCANS } from './data/mockScans';
@@ -27,6 +29,7 @@ import {
 } from './types/gestures';
 import { AuditLogEntry, MedicalScanSeries, PatientProfile } from './types/medical';
 import { VoiceCommandResult } from './types/speech';
+import { DicomSeriesUploadResult } from './types/dicom';
 
 export const App: React.FC = () => {
   // Navigation & Patient Selection State
@@ -36,7 +39,13 @@ export const App: React.FC = () => {
   // Modals & UI Toggles
   const [isAuditModalOpen, setIsAuditModalOpen] = useState<boolean>(false);
   const [isHelpModalOpen, setIsHelpModalOpen] = useState<boolean>(false);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState<boolean>(false);
+  const [isMetadataDrawerOpen, setIsMetadataDrawerOpen] = useState<boolean>(false);
   const [isMuted, setIsMuted] = useState<boolean>(false);
+
+  // Dynamic Uploaded DICOM & Image series
+  const [uploadedScans, setUploadedScans] = useState<MedicalScanSeries[]>([]);
+  const [customPatients, setCustomPatients] = useState<PatientProfile[]>([]);
 
   // Vision Pipeline & Tracking State
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -92,11 +101,73 @@ export const App: React.FC = () => {
     },
   ]);
 
+  const allPatients: PatientProfile[] = [...MOCK_PATIENTS, ...customPatients];
+  const allScans: MedicalScanSeries[] = [...MOCK_SCANS, ...uploadedScans];
+
   const activePatient: PatientProfile =
-    MOCK_PATIENTS.find((p) => p.id === currentPatientId) || MOCK_PATIENTS[0];
+    allPatients.find((p) => p.id === currentPatientId) || allPatients[0];
 
   const activeScan: MedicalScanSeries =
-    MOCK_SCANS.find((s) => s.patientId === currentPatientId) || MOCK_SCANS[0];
+    allScans.find((s) => s.patientId === currentPatientId || s.id === currentPatientId) || allScans[0];
+
+  const handleUploadSuccess = (result: DicomSeriesUploadResult) => {
+    const customPatient: PatientProfile = {
+      id: result.patientId,
+      mrn: result.patientId,
+      name: result.metadata.patientName,
+      age: parseInt(result.metadata.patientAge || '54', 10) || 54,
+      gender: (result.metadata.patientSex as any) || 'M',
+      bloodType: 'O POS',
+      allergies: ['None Reported (Imported Scan)'],
+      diagnosis: result.title,
+      scheduledProcedure: 'Diagnostic Touchless Evaluation',
+      primarySurgeon: 'Staff Radiologist',
+      anesthesiologist: 'On Duty',
+      orRoom: 'Reading Bay 4',
+      status: 'INTRA_OP',
+      labs: {
+        hemoglobin: '14.2 g/dL',
+        platelets: '240 k/uL',
+        wbc: '6.8 k/uL',
+        ptInr: '1.0',
+        potassium: '4.1 mEq/L',
+        sodium: '139 mEq/L',
+      },
+    };
+
+    const newScanSeries: MedicalScanSeries = {
+      id: result.scanId,
+      patientId: result.patientId,
+      modality: result.modality,
+      title: result.title,
+      anatomicalRegion:
+        result.metadata.seriesDescription || result.metadata.studyDescription || 'Clinical Scan',
+      acquisitionDate: result.metadata.studyDate,
+      totalSlices: result.totalSlices,
+      currentSlice: 1,
+      pixelSpacingMm: result.pixelSpacingMm,
+      findings: [],
+      notes: result.notes,
+      customSlices: result.slices,
+      dicomMetadata: result.metadata,
+      isCustomUpload: true,
+    };
+
+    setCustomPatients((prev) => [customPatient, ...prev]);
+    setUploadedScans((prev) => [newScanSeries, ...prev]);
+    setCurrentPatientId(result.patientId);
+    setActiveTab('RADIOLOGY');
+
+    handleAddAuditLog({
+      id: `log-dcm-${Date.now()}`,
+      timestamp: `${new Date().toLocaleTimeString('en-US', { hour12: false })} UTC`,
+      category: 'SCAN_ADJUSTMENT',
+      action: `Imported DICOM Dataset: ${result.title}`,
+      details: `${result.totalSlices} slices • Matrix ${result.metadata.columns}x${result.metadata.rows} • Spacing ${result.pixelSpacingMm.toFixed(3)}mm`,
+      operator: 'Dr. Aris Thorne (Lead Surgeon)',
+      verifiedTouchless: true,
+    });
+  };
 
   const [lastVoiceCommand, setLastVoiceCommand] = useState<VoiceCommandResult | null>(null);
 
@@ -143,12 +214,20 @@ export const App: React.FC = () => {
         case 'OPEN_AUDIT_LOG':
           setIsAuditModalOpen(true);
           break;
+        case 'OPEN_UPLOAD_MODAL':
+          setIsUploadModalOpen(true);
+          break;
+        case 'TOGGLE_METADATA_DRAWER':
+          setIsMetadataDrawerOpen((prev) => !prev);
+          break;
         case 'SHOW_HELP':
           setIsHelpModalOpen(true);
           break;
         case 'CLOSE_MODAL':
           setIsHelpModalOpen(false);
           setIsAuditModalOpen(false);
+          setIsUploadModalOpen(false);
+          setIsMetadataDrawerOpen(false);
           break;
         case 'TOGGLE_FULLSCREEN':
           if (!document.fullscreenElement) {
@@ -436,7 +515,7 @@ export const App: React.FC = () => {
       <NavigationBar
         activeTab={activeTab}
         onTabChange={setActiveTab}
-        patients={MOCK_PATIENTS}
+        patients={allPatients}
         currentPatientId={currentPatientId}
         onPatientChange={setCurrentPatientId}
       />
@@ -449,7 +528,14 @@ export const App: React.FC = () => {
       {/* Main Workspace Display Port */}
       <main className="flex-1 relative overflow-hidden flex flex-col">
         {activeTab === 'RADIOLOGY' && (
-          <MedicalViewer scan={activeScan} cursor={cursor} voiceCommand={lastVoiceCommand} />
+          <MedicalViewer
+            scan={activeScan}
+            cursor={cursor}
+            voiceCommand={lastVoiceCommand}
+            onOpenUploadModal={() => setIsUploadModalOpen(true)}
+            onToggleMetadataDrawer={() => setIsMetadataDrawerOpen((prev) => !prev)}
+            isMetadataDrawerOpen={isMetadataDrawerOpen}
+          />
         )}
 
         {activeTab === 'CHECKLIST' && (
@@ -498,7 +584,7 @@ export const App: React.FC = () => {
       {/* Virtual Sterile Pointer & Dwell Ring Overlay */}
       <VirtualCursor cursor={cursor} />
 
-      {/* Modals */}
+      {/* Modals & Drawers */}
       <AuditLogModal
         isOpen={isAuditModalOpen}
         onClose={() => setIsAuditModalOpen(false)}
@@ -508,6 +594,18 @@ export const App: React.FC = () => {
       <GesturesHelpModal
         isOpen={isHelpModalOpen}
         onClose={() => setIsHelpModalOpen(false)}
+      />
+
+      <DicomDropzoneModal
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+        onUploadSuccess={handleUploadSuccess}
+      />
+
+      <DicomMetadataDrawer
+        isOpen={isMetadataDrawerOpen}
+        onClose={() => setIsMetadataDrawerOpen(false)}
+        metadata={activeScan.dicomMetadata}
       />
     </div>
   );

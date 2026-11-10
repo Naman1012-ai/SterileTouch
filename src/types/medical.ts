@@ -1,4 +1,5 @@
 import { GestureType, Point2D } from './gestures';
+import { DecodedMedicalSlice, DicomMetadata } from './dicom';
 
 export type ModalityType = 'CT' | 'MRI' | 'X-RAY';
 
@@ -64,6 +65,9 @@ export interface MedicalScanSeries {
   pixelSpacingMm: number; // e.g. 0.45 mm/px for measurement calculation
   findings: MedicalFinding[];
   notes: string;
+  customSlices?: DecodedMedicalSlice[];
+  dicomMetadata?: DicomMetadata;
+  isCustomUpload?: boolean;
 }
 
 export interface VitalsMetrics {

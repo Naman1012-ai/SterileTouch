@@ -388,6 +388,18 @@ export class VoiceAssistantService {
 
     // 9. Gestures Help & Modal Dismissal (e.g. "open gestures", "show gestures", "close guide")
     else if (
+      /(upload scan|upload dicom|import scan|import dicom|load scan|load dicom|open dropzone|add scan)/i.test(
+        clean
+      )
+    ) {
+      intent = 'OPEN_UPLOAD_MODAL';
+    } else if (
+      /(show metadata|open metadata|dicom tags|dicom header|pacs tags|pacs header|view tags|hide metadata|close metadata)/i.test(
+        clean
+      )
+    ) {
+      intent = 'TOGGLE_METADATA_DRAWER';
+    } else if (
       /(open gestures|show gestures|gestures guide|gestures help|open help|show help|command guide|\bhelp\b|\bgestures\b|shortcuts)/i.test(
         clean
       )
@@ -609,6 +621,12 @@ export class VoiceAssistantService {
         break;
       case 'OPEN_AUDIT_LOG':
         this.speak('Opening audit log');
+        break;
+      case 'OPEN_UPLOAD_MODAL':
+        this.speak('Opening DICOM dropzone');
+        break;
+      case 'TOGGLE_METADATA_DRAWER':
+        this.speak('PACS metadata toggled');
         break;
       case 'SHOW_HELP':
         this.speak('Commands guide');

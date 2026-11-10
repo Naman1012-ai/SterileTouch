@@ -88,7 +88,13 @@ const testCases = [
   { input: 'computer, bone window', expectedIntent: 'SET_WINDOW_PRESET', expectedParam: { key: 'preset', value: 'BONE' } },
   { input: 'steriletouch silence alarm', expectedIntent: 'SILENCE_ALARM' },
 
-  // 11. Unknown/Ambient conversation
+  // 11. DICOM Uploader & PACS Inspector
+  { input: 'upload scan', expectedIntent: 'OPEN_UPLOAD_MODAL' },
+  { input: 'import dicom', expectedIntent: 'OPEN_UPLOAD_MODAL' },
+  { input: 'show metadata', expectedIntent: 'TOGGLE_METADATA_DRAWER' },
+  { input: 'pacs tags', expectedIntent: 'TOGGLE_METADATA_DRAWER' },
+
+  // 12. Unknown/Ambient conversation
   { input: 'pass me the scalpels please', expectedIntent: 'UNKNOWN' },
 ];
 
