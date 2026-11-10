@@ -22,12 +22,16 @@ const testCases = [
   { input: 'reset view', expectedIntent: 'RESET_VIEW' },
   { input: 'center scan', expectedIntent: 'RESET_VIEW' },
 
-  // 3. Window / Level Presets
+  // 3. Window / Level Presets (including single-word commands)
   { input: 'bone window', expectedIntent: 'SET_WINDOW_PRESET', expectedParam: { key: 'preset', value: 'BONE' } },
   { input: 'show bones', expectedIntent: 'SET_WINDOW_PRESET', expectedParam: { key: 'preset', value: 'BONE' } },
+  { input: 'bone', expectedIntent: 'SET_WINDOW_PRESET', expectedParam: { key: 'preset', value: 'BONE' } },
   { input: 'soft tissue', expectedIntent: 'SET_WINDOW_PRESET', expectedParam: { key: 'preset', value: 'SOFT_TISSUE' } },
+  { input: 'tissue', expectedIntent: 'SET_WINDOW_PRESET', expectedParam: { key: 'preset', value: 'SOFT_TISSUE' } },
   { input: 'lung window', expectedIntent: 'SET_WINDOW_PRESET', expectedParam: { key: 'preset', value: 'LUNG' } },
+  { input: 'lungs', expectedIntent: 'SET_WINDOW_PRESET', expectedParam: { key: 'preset', value: 'LUNG' } },
   { input: 'invert contrast', expectedIntent: 'SET_WINDOW_PRESET', expectedParam: { key: 'preset', value: 'INVERT' } },
+  { input: 'invert', expectedIntent: 'SET_WINDOW_PRESET', expectedParam: { key: 'preset', value: 'INVERT' } },
 
   // 4. Caliper & AI Findings
   { input: 'measure', expectedIntent: 'TOGGLE_CALIPER' },
@@ -35,32 +39,56 @@ const testCases = [
   { input: 'clear measurements', expectedIntent: 'CLEAR_CALIPER' },
   { input: 'toggle ai findings', expectedIntent: 'TOGGLE_AI_FINDINGS' },
 
-  // 5. Navigation & Patient Switcher
+  // 5. Navigation & "Go back to radiology/ct suite"
   { input: 'open checklist', expectedIntent: 'NAV_CHECKLIST' },
   { input: 'open vitals', expectedIntent: 'NAV_VITALS' },
   { input: 'open patient records', expectedIntent: 'NAV_RECORDS' },
   { input: 'open radiology', expectedIntent: 'NAV_RADIOLOGY' },
-  { input: 'switch to case 2', expectedIntent: 'SWITCH_PATIENT', expectedParam: { key: 'patientIndex', value: 2 } },
+  { input: 'go back to radiology', expectedIntent: 'NAV_RADIOLOGY' },
+  { input: 'return to ct suite', expectedIntent: 'NAV_RADIOLOGY' },
+  { input: 'ct suite', expectedIntent: 'NAV_RADIOLOGY' },
+  { input: 'radiology', expectedIntent: 'NAV_RADIOLOGY' },
 
-  // 6. WHO Checklist & Alarms
+  // 6. Patient Switcher & Navigation
+  { input: 'switch to case 2', expectedIntent: 'SWITCH_PATIENT', expectedParam: { key: 'patientIndex', value: 2 } },
+  { input: 'next patient', expectedIntent: 'NEXT_PATIENT' },
+  { input: 'next case', expectedIntent: 'NEXT_PATIENT' },
+  { input: 'previous patient', expectedIntent: 'PREV_PATIENT' },
+
+  // 7. WHO Checklist Phases & Sign-Off
+  { input: 'open phase 1', expectedIntent: 'SELECT_CHECKLIST_PHASE', expectedParam: { key: 'phase', value: 'SIGN_IN' } },
+  { input: 'sign in', expectedIntent: 'SELECT_CHECKLIST_PHASE', expectedParam: { key: 'phase', value: 'SIGN_IN' } },
+  { input: 'time out', expectedIntent: 'SELECT_CHECKLIST_PHASE', expectedParam: { key: 'phase', value: 'TIME_OUT' } },
+  { input: 'open phase 2', expectedIntent: 'SELECT_CHECKLIST_PHASE', expectedParam: { key: 'phase', value: 'TIME_OUT' } },
+  { input: 'phase 3 in who checklist', expectedIntent: 'SELECT_CHECKLIST_PHASE', expectedParam: { key: 'phase', value: 'SIGN_OUT' } },
+  { input: 'sign out', expectedIntent: 'SELECT_CHECKLIST_PHASE', expectedParam: { key: 'phase', value: 'SIGN_OUT' } },
   { input: 'sign off', expectedIntent: 'SIGN_OFF_CHECKLIST' },
   { input: 'verify time out', expectedIntent: 'SIGN_OFF_CHECKLIST' },
+
+  // 8. Gestures Help & Modal Dismissal
+  { input: 'open gestures', expectedIntent: 'SHOW_HELP' },
+  { input: 'show gestures', expectedIntent: 'SHOW_HELP' },
+  { input: 'gestures', expectedIntent: 'SHOW_HELP' },
+  { input: 'close guide', expectedIntent: 'CLOSE_MODAL' },
+  { input: 'close modal', expectedIntent: 'CLOSE_MODAL' },
+  { input: 'dismiss', expectedIntent: 'CLOSE_MODAL' },
+  { input: 'fullscreen', expectedIntent: 'TOGGLE_FULLSCREEN' },
+
+  // 9. Alarms & Sterile Field Control
   { input: 'silence alarm', expectedIntent: 'SILENCE_ALARM' },
   { input: 'acknowledge alarm', expectedIntent: 'SILENCE_ALARM' },
   { input: 'simulate emergency', expectedIntent: 'SIMULATE_EMERGENCY' },
-
-  // 7. Sterile Field Control
   { input: 'sterile freeze', expectedIntent: 'STERILE_FREEZE' },
   { input: 'freeze screen', expectedIntent: 'STERILE_FREEZE' },
   { input: 'unlock screen', expectedIntent: 'STERILE_UNFREEZE' },
 
-  // 8. Wake-Word Prefixed Commands (Surgeon says "Sterile [command]" or "Computer [command]")
+  // 10. Wake-Word Prefixed Commands
   { input: 'sterile, next slice', expectedIntent: 'NEXT_SLICE' },
   { input: 'sterile zoom in', expectedIntent: 'ZOOM_IN' },
   { input: 'computer, bone window', expectedIntent: 'SET_WINDOW_PRESET', expectedParam: { key: 'preset', value: 'BONE' } },
   { input: 'steriletouch silence alarm', expectedIntent: 'SILENCE_ALARM' },
 
-  // 9. Unknown/Ambient conversation
+  // 11. Unknown/Ambient conversation
   { input: 'pass me the scalpels please', expectedIntent: 'UNKNOWN' },
 ];
 

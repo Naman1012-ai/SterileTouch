@@ -112,6 +112,9 @@ export const App: React.FC = () => {
         case 'NAV_CHECKLIST':
           setActiveTab('CHECKLIST');
           break;
+        case 'SELECT_CHECKLIST_PHASE':
+          setActiveTab('CHECKLIST');
+          break;
         case 'NAV_VITALS':
           setActiveTab('VITALS');
           break;
@@ -125,11 +128,34 @@ export const App: React.FC = () => {
           else if (idx === 3) setCurrentPatientId('pt-003');
           break;
         }
+        case 'NEXT_PATIENT': {
+          const curIdx = MOCK_PATIENTS.findIndex((p) => p.id === currentPatientId);
+          const nextIdx = (curIdx + 1) % MOCK_PATIENTS.length;
+          setCurrentPatientId(MOCK_PATIENTS[nextIdx].id);
+          break;
+        }
+        case 'PREV_PATIENT': {
+          const curIdx = MOCK_PATIENTS.findIndex((p) => p.id === currentPatientId);
+          const prevIdx = (curIdx - 1 + MOCK_PATIENTS.length) % MOCK_PATIENTS.length;
+          setCurrentPatientId(MOCK_PATIENTS[prevIdx].id);
+          break;
+        }
         case 'OPEN_AUDIT_LOG':
           setIsAuditModalOpen(true);
           break;
         case 'SHOW_HELP':
           setIsHelpModalOpen(true);
+          break;
+        case 'CLOSE_MODAL':
+          setIsHelpModalOpen(false);
+          setIsAuditModalOpen(false);
+          break;
+        case 'TOGGLE_FULLSCREEN':
+          if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(() => {});
+          } else {
+            document.exitFullscreen().catch(() => {});
+          }
           break;
         case 'TOGGLE_AUDIO':
           handleToggleMute();

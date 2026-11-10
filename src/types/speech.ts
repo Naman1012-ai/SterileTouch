@@ -11,9 +11,12 @@ export type VoiceCommandIntent =
   | 'TOGGLE_AI_FINDINGS'
   | 'NAV_RADIOLOGY'
   | 'NAV_CHECKLIST'
+  | 'SELECT_CHECKLIST_PHASE'
   | 'NAV_VITALS'
   | 'NAV_RECORDS'
   | 'SWITCH_PATIENT'
+  | 'NEXT_PATIENT'
+  | 'PREV_PATIENT'
   | 'SIGN_OFF_CHECKLIST'
   | 'OPEN_AUDIT_LOG'
   | 'SILENCE_ALARM'
@@ -22,6 +25,8 @@ export type VoiceCommandIntent =
   | 'STERILE_UNFREEZE'
   | 'TOGGLE_AUDIO'
   | 'SHOW_HELP'
+  | 'CLOSE_MODAL'
+  | 'TOGGLE_FULLSCREEN'
   | 'UNKNOWN';
 
 export interface VoiceCommandResult {
@@ -30,6 +35,7 @@ export interface VoiceCommandResult {
   matchedPhrase: string;
   params?: Record<string, string | number>;
   confidence: number;
+  isInterimMatch?: boolean;
 }
 
 export type VoiceRecognitionState =

@@ -20,6 +20,15 @@ export class VoiceAssistantService {
   private lastCommand: VoiceCommandResult | null = null;
   private errorMessage: string | null = null;
 
+  // Fast-trigger interim tracking & debounce
+  private lastExecutedIntent: VoiceCommandIntent | null = null;
+  private lastExecutedPhrase: string = '';
+  private lastExecutedTime: number = 0;
+  private readonly FAST_TRIGGER_DEBOUNCE_MS: number = 850;
+
+  // SpeechSynthesis voice selection cache
+  private preferredVoice: SpeechSynthesisVoice | null = null;
+
   // Listeners
   private commandListeners: VoiceCommandListener[] = [];
   private statusListeners: VoiceStatusListener[] = [];
@@ -32,6 +41,40 @@ export class VoiceAssistantService {
         this.isSupported = true;
         this.initRecognition(SpeechRec);
       }
+
+      // Initialize SpeechSynthesis voices
+      if (window.speechSynthesis) {
+        this.loadVoices();
+        window.speechSynthesis.onvoiceschanged = () => {
+          this.loadVoices();
+        };
+      }
+    }
+  }
+
+  private loadVoices() {
+    if (typeof window === 'undefined' || !window.speechSynthesis) return;
+    try {
+      const voices = window.speechSynthesis.getVoices();
+      if (voices.length > 0) {
+        // Look for high-quality natural English voices
+        this.preferredVoice =
+          voices.find(
+            (v) =>
+              v.lang.startsWith('en') &&
+              (v.name.includes('Natural') ||
+                v.name.includes('Google') ||
+                v.name.includes('Jenny') ||
+                v.name.includes('David') ||
+                v.name.includes('Samantha') ||
+                v.name.includes('Zira'))
+          ) ||
+          voices.find((v) => v.lang.startsWith('en')) ||
+          voices[0] ||
+          null;
+      }
+    } catch (e) {
+      console.warn('Voice loading error:', e);
     }
   }
 
@@ -67,14 +110,30 @@ export class VoiceAssistantService {
           this.emitTranscript(currentText, !!finalTranscript);
         }
 
-        if (finalTranscript.trim()) {
-          this.handleFinalTranscript(finalTranscript.trim());
+        // FAST-TRIGGER: Evaluate intent on every speech chunk (<50ms execution)
+        const recognized = this.parseIntent(currentText);
+        const now = performance.now();
+
+        if (recognized.intent !== 'UNKNOWN') {
+          const isSameCommand =
+            this.lastExecutedIntent === recognized.intent &&
+            (this.lastExecutedPhrase === recognized.matchedPhrase ||
+              now - this.lastExecutedTime < this.FAST_TRIGGER_DEBOUNCE_MS);
+
+          if (!isSameCommand) {
+            this.lastExecutedIntent = recognized.intent;
+            this.lastExecutedPhrase = recognized.matchedPhrase;
+            this.lastExecutedTime = now;
+            recognized.isInterimMatch = !finalTranscript;
+
+            this.executeCommand(recognized);
+          }
         }
       };
 
       this.recognition.onerror = (event: { error: string; message?: string }) => {
-        console.warn('Voice recognition event error:', event.error);
         if (event.error !== 'no-speech') {
+          console.warn('Voice recognition error:', event.error);
           this.errorMessage = `Voice Error: ${event.error}`;
         }
         this.emitStatus();
@@ -86,14 +145,13 @@ export class VoiceAssistantService {
           try {
             this.recognition?.start();
           } catch {
-            // Browser cooldown delay
             setTimeout(() => {
               if (this.isListening) {
                 try {
                   this.recognition?.start();
                 } catch {}
               }
-            }, 300);
+            }, 250);
           }
         }
         this.emitStatus();
@@ -126,6 +184,9 @@ export class VoiceAssistantService {
 
   public setSpeechResponseEnabled(enabled: boolean) {
     this.speechResponseEnabled = enabled;
+    if (enabled) {
+      this.speak('Voice responses enabled');
+    }
     this.emitStatus();
   }
 
@@ -162,22 +223,30 @@ export class VoiceAssistantService {
     this.emitStatus();
   }
 
-  // CLINICAL INTENT PARSER & SYNONYM MATCHER
+  // EXPANSIVE CLINICAL INTENT PARSER & SYNONYM MATCHER
   public parseIntent(raw: string): VoiceCommandResult {
     let clean = raw.toLowerCase().trim();
 
     // Strip wake words if present (surgeons can speak directly or use wake word)
-    clean = clean.replace(/^(sterile|steriletouch|computer|doctor|terminal|assistant)[,\s]+/i, '').trim();
+    clean = clean
+      .replace(/^(sterile|steriletouch|computer|doctor|terminal|assistant)[,\s]+/i, '')
+      .trim();
 
     let intent: VoiceCommandIntent = 'UNKNOWN';
     let matchedPhrase = clean;
     const params: Record<string, string | number> = {};
-    let confidence = 0.9;
+    let confidence = 0.92;
 
     // 1. Radiology Slice Navigation
-    if (/^(next slice|next image|slice up|next|advance)$/i.test(clean) || clean.includes('next slice')) {
+    if (
+      /^(next slice|next image|slice up|next|advance)$/i.test(clean) ||
+      clean.includes('next slice')
+    ) {
       intent = 'NEXT_SLICE';
-    } else if (/^(previous slice|prev slice|slice down|back|previous)$/i.test(clean) || clean.includes('previous slice')) {
+    } else if (
+      /^(previous slice|prev slice|slice down|back|previous)$/i.test(clean) ||
+      clean.includes('previous slice')
+    ) {
       intent = 'PREV_SLICE';
     } else if (/(?:go to|show|slice|layer)\s+(\d+)/i.test(clean)) {
       const match = clean.match(/(?:go to|show|slice|layer)\s+(\d+)/i);
@@ -188,93 +257,187 @@ export class VoiceAssistantService {
     }
 
     // 2. Zoom & Pan
-    else if (/^(zoom in|enlarge|magnify|closer)$/i.test(clean) || clean.includes('zoom in')) {
+    else if (
+      /^(zoom in|enlarge|magnify|closer|zoom in scan)$/i.test(clean) ||
+      clean.includes('zoom in')
+    ) {
       intent = 'ZOOM_IN';
-    } else if (/^(zoom out|smaller|shrink|step back)$/i.test(clean) || clean.includes('zoom out')) {
+    } else if (
+      /^(zoom out|smaller|shrink|step back|zoom out scan)$/i.test(clean) ||
+      clean.includes('zoom out')
+    ) {
       intent = 'ZOOM_OUT';
-    } else if (/^(reset view|reset zoom|center scan|center|reset)$/i.test(clean) || clean.includes('reset view')) {
+    } else if (
+      /^(reset view|reset zoom|center scan|center|reset)$/i.test(clean) ||
+      clean.includes('reset view')
+    ) {
       intent = 'RESET_VIEW';
     }
 
-    // 3. Window / Level Filters
-    else if (/(bone window|bone contrast|show bones|bones)/i.test(clean)) {
+    // 3. Caliper & Measurements (check CLEAR before MEASURE)
+    else if (
+      /(clear measurements|clear caliper|delete measurements|clear ruler|delete caliper)/i.test(
+        clean
+      )
+    ) {
+      intent = 'CLEAR_CALIPER';
+    } else if (
+      /(measure lesion|measure fracture|measure|caliper tool|caliper|ruler tool|toggle caliper|ruler)/i.test(
+        clean
+      )
+    ) {
+      intent = 'TOGGLE_CALIPER';
+    }
+
+    // 4. Window / Level Filters (allow single-word presets: "bone", "lungs", "tissue", "invert")
+    else if (/(bone window|bone contrast|show bones|bones|bone filter|\bbone\b)/i.test(clean)) {
       intent = 'SET_WINDOW_PRESET';
       params.preset = 'BONE';
-    } else if (/(soft tissue|brain window|tissue contrast|tissue)/i.test(clean)) {
+    } else if (
+      /(soft tissue window|soft tissue|brain window|tissue contrast|\btissue\b)/i.test(clean)
+    ) {
       intent = 'SET_WINDOW_PRESET';
       params.preset = 'SOFT_TISSUE';
-    } else if (/(lung window|show lungs|lungs)/i.test(clean)) {
+    } else if (/(lung window|show lungs|lungs|lung filter|\blung\b)/i.test(clean)) {
       intent = 'SET_WINDOW_PRESET';
       params.preset = 'LUNG';
-    } else if (/(invert contrast|invert colors|negative view|invert)/i.test(clean)) {
+    } else if (/(invert contrast|invert colors|negative view|\binvert\b)/i.test(clean)) {
       intent = 'SET_WINDOW_PRESET';
       params.preset = 'INVERT';
-    } else if (/(default window|normal contrast|reset contrast|default)/i.test(clean)) {
+    } else if (
+      /(default window|normal contrast|reset contrast|default contrast|\bdefault\b)/i.test(clean)
+    ) {
       intent = 'SET_WINDOW_PRESET';
       params.preset = 'DEFAULT';
     }
 
-    // 4. Caliper & Measurements
-    else if (/(clear measurements|clear caliper|delete measurements|clear ruler)/i.test(clean)) {
-      intent = 'CLEAR_CALIPER';
-    } else if (/(measure|caliper|ruler tool|toggle caliper)/i.test(clean)) {
-      intent = 'TOGGLE_CALIPER';
-    }
-
     // 5. AI Findings
-    else if (/(toggle ai|ai findings|show findings|hide findings|ai detections)/i.test(clean)) {
+    else if (
+      /(toggle ai|ai findings|show findings|hide findings|ai detections|ai detection)/i.test(clean)
+    ) {
       intent = 'TOGGLE_AI_FINDINGS';
     }
 
-    // 6. Navigation Tabs
-    else if (/(open radiology|show ct|show scan|radiology view|radiology suite|open imaging)/i.test(clean)) {
+    // 6. WHO Checklist Verification Sign-Off
+    else if (
+      /(sign off|sign checklist|verify time out|confirm time out|verify checklist|confirm checklist|check item|verify item|confirm item)/i.test(
+        clean
+      )
+    ) {
+      intent = 'SIGN_OFF_CHECKLIST';
+    } else if (/(open audit log|view audit trail|show audit|audit log|audit trail)/i.test(clean)) {
+      intent = 'OPEN_AUDIT_LOG';
+    }
+
+    // 7. WHO Checklist Phases (e.g. "open phase 1", "phase 3 in who checklist", "sign in", "time out")
+    else if (
+      /(open phase 1|show phase 1|switch to phase 1|phase 1 in who checklist|phase 1 in checklist|\bphase 1\b|\bphase one\b|sign in phase|sign in tab|\bsign in\b)/i.test(
+        clean
+      )
+    ) {
+      intent = 'SELECT_CHECKLIST_PHASE';
+      params.phase = 'SIGN_IN';
+    } else if (
+      /(open phase 2|show phase 2|switch to phase 2|phase 2 in who checklist|phase 2 in checklist|\bphase 2\b|\bphase two\b|time out phase|time out tab|\btime out\b)/i.test(
+        clean
+      )
+    ) {
+      intent = 'SELECT_CHECKLIST_PHASE';
+      params.phase = 'TIME_OUT';
+    } else if (
+      /(open phase 3|show phase 3|switch to phase 3|phase 3 in who checklist|phase 3 in checklist|\bphase 3\b|\bphase three\b|sign out phase|sign out tab|\bsign out\b)/i.test(
+        clean
+      )
+    ) {
+      intent = 'SELECT_CHECKLIST_PHASE';
+      params.phase = 'SIGN_OUT';
+    }
+
+    // 8. Navigation Tabs & "Go Back To Radiology / CT Suite"
+    else if (
+      /(go back to radiology|return to radiology|go back to ct|return to ct|go back to scan|open radiology|show ct|show scan|radiology view|radiology suite|open imaging|imaging suite|\bradiology\b|ct suite)/i.test(
+        clean
+      )
+    ) {
       intent = 'NAV_RADIOLOGY';
-    } else if (/(open checklist|surgical checklist|safety checklist|who checklist)/i.test(clean)) {
+    } else if (
+      /(open checklist|surgical checklist|safety checklist|who checklist|\bchecklist\b)/i.test(
+        clean
+      )
+    ) {
       intent = 'NAV_CHECKLIST';
-    } else if (/(open vitals|show monitor|ecg monitor|cardiac vitals|vitals hud)/i.test(clean)) {
+    } else if (
+      /(open vitals|show monitor|ecg monitor|cardiac vitals|vitals hud|vitals monitor|\bvitals\b)/i.test(
+        clean
+      )
+    ) {
       intent = 'NAV_VITALS';
-    } else if (/(open patient records|show labs|patient chart|medical records|show ehr)/i.test(clean)) {
+    } else if (
+      /(open patient records|show labs|patient chart|medical records|show ehr|patient records|\blabs\b|\brecords\b)/i.test(
+        clean
+      )
+    ) {
       intent = 'NAV_RECORDS';
     }
 
-    // 7. Patient Switcher
-    else if (/(case 1|patient 1|first case)/i.test(clean)) {
+    // 9. Gestures Help & Modal Dismissal (e.g. "open gestures", "show gestures", "close guide")
+    else if (
+      /(open gestures|show gestures|gestures guide|gestures help|open help|show help|command guide|\bhelp\b|\bgestures\b|shortcuts)/i.test(
+        clean
+      )
+    ) {
+      intent = 'SHOW_HELP';
+    } else if (
+      /(close guide|close modal|close gestures|close audit|dismiss modal|dismiss guide|\bdismiss\b|exit modal|\bclose\b|hide guide)/i.test(
+        clean
+      )
+    ) {
+      intent = 'CLOSE_MODAL';
+    }
+
+    // 10. Patient Switcher
+    else if (/(next patient|next case)/i.test(clean)) {
+      intent = 'NEXT_PATIENT';
+    } else if (/(previous patient|prev patient|previous case|prev case)/i.test(clean)) {
+      intent = 'PREV_PATIENT';
+    } else if (/(case 1|patient 1|first case|marcus)/i.test(clean)) {
       intent = 'SWITCH_PATIENT';
       params.patientIndex = 1;
-    } else if (/(case 2|patient 2|second case)/i.test(clean)) {
+    } else if (/(case 2|patient 2|second case|elena)/i.test(clean)) {
       intent = 'SWITCH_PATIENT';
       params.patientIndex = 2;
-    } else if (/(case 3|patient 3|third case)/i.test(clean)) {
+    } else if (/(case 3|patient 3|third case|david)/i.test(clean)) {
       intent = 'SWITCH_PATIENT';
       params.patientIndex = 3;
     }
 
-    // 8. WHO Checklist Verification
-    else if (/(sign off|sign checklist|verify time out|confirm checklist|check item|verify item)/i.test(clean)) {
-      intent = 'SIGN_OFF_CHECKLIST';
-    } else if (/(open audit log|view audit trail|show audit|audit log)/i.test(clean)) {
-      intent = 'OPEN_AUDIT_LOG';
-    }
-
-    // 9. Vitals & Cardiac Alarms
-    else if (/(silence alarm|mute alarm|acknowledge alarm|dismiss alarm|cancel alarm)/i.test(clean)) {
+    // 11. Vitals & Cardiac Alarms
+    else if (
+      /(silence alarm|mute alarm|acknowledge alarm|dismiss alarm|cancel alarm|stop alarm|\bsilence\b)/i.test(
+        clean
+      )
+    ) {
       intent = 'SILENCE_ALARM';
-    } else if (/(simulate emergency|simulate tachycardia|trigger alarm|emergency simulation)/i.test(clean)) {
+    } else if (
+      /(simulate emergency|simulate tachycardia|trigger alarm|emergency simulation|\btachycardia\b)/i.test(
+        clean
+      )
+    ) {
       intent = 'SIMULATE_EMERGENCY';
     }
 
-    // 10. Sterile Freeze
-    else if (/(unfreeze|unlock screen|unlock cursor|resume interaction|unlock)/i.test(clean)) {
+    // 12. Sterile Freeze
+    else if (/(unfreeze|unlock screen|unlock cursor|resume interaction|\bunlock\b)/i.test(clean)) {
       intent = 'STERILE_UNFREEZE';
-    } else if (/(sterile freeze|freeze screen|lock screen|lock cursor|freeze)/i.test(clean)) {
+    } else if (/(sterile freeze|freeze screen|lock screen|lock cursor|\bfreeze\b)/i.test(clean)) {
       intent = 'STERILE_FREEZE';
     }
 
-    // 11. Audio & Help
+    // 13. System Utilities
     else if (/(mute audio|unmute audio|toggle sound|mute sound)/i.test(clean)) {
       intent = 'TOGGLE_AUDIO';
-    } else if (/(show help|gestures help|command guide|help)/i.test(clean)) {
-      intent = 'SHOW_HELP';
+    } else if (/(full screen|fullscreen|toggle fullscreen|exit fullscreen)/i.test(clean)) {
+      intent = 'TOGGLE_FULLSCREEN';
     }
 
     return {
@@ -286,47 +449,68 @@ export class VoiceAssistantService {
     };
   }
 
-  private handleFinalTranscript(transcript: string) {
-    const result = this.parseIntent(transcript);
+  private executeCommand(result: VoiceCommandResult) {
     this.lastCommand = result;
-
-    if (result.intent !== 'UNKNOWN') {
-      audioService.playClick();
-      this.provideVerbalConfirmation(result);
-      this.emitCommand(result);
-    } else {
-      console.log('Unrecognized voice transcript:', transcript);
-    }
-
+    audioService.playClick();
+    this.provideVerbalConfirmation(result);
+    this.emitCommand(result);
     this.emitStatus();
   }
 
-  // Spoken verbal response via browser speech synthesis
+  // ROBUST SPEECH SYNTHESIS ENGINE (Audio Unlock + Auto-Resume)
   public speak(text: string) {
     if (!this.speechResponseEnabled || typeof window === 'undefined' || !window.speechSynthesis) {
       return;
     }
 
     try {
-      window.speechSynthesis.cancel(); // Stop prior speech
+      // Chrome/Edge auto-unfreeze
+      if (window.speechSynthesis.paused) {
+        window.speechSynthesis.resume();
+      }
+
+      // Ensure voices are populated
+      if (!this.preferredVoice) {
+        this.loadVoices();
+      }
+
+      window.speechSynthesis.cancel(); // clear previous speech queue
+
       const utterance = new SpeechSynthesisUtterance(text);
+      if (this.preferredVoice) {
+        utterance.voice = this.preferredVoice;
+      }
       utterance.rate = 1.05;
       utterance.pitch = 1.0;
-      utterance.volume = 0.85;
+      utterance.volume = 1.0;
 
       this.isSpeaking = true;
+      this.emitStatus();
+
       utterance.onend = () => {
         this.isSpeaking = false;
         this.emitStatus();
       };
-      utterance.onerror = () => {
+
+      utterance.onerror = (e) => {
+        console.warn('Speech synthesis utterance error:', e);
         this.isSpeaking = false;
         this.emitStatus();
       };
 
-      window.speechSynthesis.speak(utterance);
+      // Slight micro-timeout prevents Chrome cancellation race condition
+      setTimeout(() => {
+        try {
+          if (window.speechSynthesis.paused) {
+            window.speechSynthesis.resume();
+          }
+          window.speechSynthesis.speak(utterance);
+        } catch (innerErr) {
+          console.warn('SpeechSynthesis speak failed:', innerErr);
+        }
+      }, 20);
     } catch (err) {
-      console.warn('Speech synthesis error:', err);
+      console.warn('Speech synthesis outer error:', err);
     }
   }
 
@@ -336,7 +520,7 @@ export class VoiceAssistantService {
     switch (result.intent) {
       case 'NEXT_SLICE':
       case 'PREV_SLICE':
-        // Keep slice traversal quiet with just ticks
+        // Fast tick is sufficient for slice navigation
         break;
       case 'GO_TO_SLICE':
         this.speak(`Slice ${result.params?.sliceNumber}`);
@@ -368,6 +552,13 @@ export class VoiceAssistantService {
       case 'NAV_CHECKLIST':
         this.speak('Surgical checklist');
         break;
+      case 'SELECT_CHECKLIST_PHASE': {
+        const p = result.params?.phase;
+        const name =
+          p === 'SIGN_IN' ? 'Sign In' : p === 'TIME_OUT' ? 'Time Out' : 'Sign Out';
+        this.speak(`Phase ${name} active`);
+        break;
+      }
       case 'NAV_VITALS':
         this.speak('Vitals monitor');
         break;
@@ -375,7 +566,13 @@ export class VoiceAssistantService {
         this.speak('Patient records');
         break;
       case 'SWITCH_PATIENT':
-        this.speak(`Switched to Case ${result.params?.patientIndex}`);
+        this.speak(`Case ${result.params?.patientIndex} loaded`);
+        break;
+      case 'NEXT_PATIENT':
+        this.speak('Next patient loaded');
+        break;
+      case 'PREV_PATIENT':
+        this.speak('Previous patient loaded');
         break;
       case 'SIGN_OFF_CHECKLIST':
         this.speak('Safety checklist confirmed');
@@ -396,7 +593,13 @@ export class VoiceAssistantService {
         this.speak('Opening audit log');
         break;
       case 'SHOW_HELP':
-        this.speak('Showing commands guide');
+        this.speak('Commands guide');
+        break;
+      case 'CLOSE_MODAL':
+        this.speak('Dismissed');
+        break;
+      case 'TOGGLE_FULLSCREEN':
+        this.speak('Fullscreen toggled');
         break;
     }
   }

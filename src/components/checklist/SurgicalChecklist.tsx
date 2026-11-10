@@ -66,12 +66,19 @@ export const SurgicalChecklist: React.FC<SurgicalChecklistProps> = ({
     return () => clearInterval(interval);
   }, [gestureResult.isThumbsUp, hoveredItemId]);
 
-  // Voice command checklist sign-off
+  // Voice command checklist sign-off and phase selection
   useEffect(() => {
-    if (voiceCommand?.intent === 'SIGN_OFF_CHECKLIST') {
+    if (!voiceCommand) return;
+    if (voiceCommand.intent === 'SIGN_OFF_CHECKLIST') {
       const pending = currentPhaseItems.find((i) => !i.isCompleted) || items.find((i) => !i.isCompleted);
       if (pending) {
         completeItem(pending.id, 'THUMBS_UP');
+      }
+    } else if (voiceCommand.intent === 'SELECT_CHECKLIST_PHASE') {
+      const targetPhase = voiceCommand.params?.phase as ChecklistPhase;
+      if (targetPhase) {
+        setSelectedPhase(targetPhase);
+        audioService.playClick();
       }
     }
   }, [voiceCommand]);
