@@ -1,0 +1,410 @@
+import React, { useEffect, useRef, useState } from 'react';
+import { Header } from './components/layout/Header';
+import { ActiveTab, NavigationBar } from './components/layout/NavigationBar';
+import { MedicalViewer } from './components/viewer/MedicalViewer';
+import { SurgicalChecklist } from './components/checklist/SurgicalChecklist';
+import { VitalsMonitor } from './components/vitals/VitalsMonitor';
+import { PatientRecords } from './components/records/PatientRecords';
+import { CameraFeed } from './components/hud/CameraFeed';
+import { GestureBadge } from './components/hud/GestureBadge';
+import { VirtualCursor } from './components/hud/VirtualCursor';
+import { AuditLogModal } from './components/checklist/AuditLogModal';
+import { GesturesHelpModal } from './components/hud/GesturesHelpModal';
+
+import { MOCK_PATIENTS } from './data/mockPatients';
+import { MOCK_SCANS } from './data/mockScans';
+import { handTrackingService } from './services/handTracking';
+import { gestureClassifier } from './services/gestureClassifier';
+import { cursorManager } from './services/cursorManager';
+import { audioService } from './services/audioFeedback';
+
+import {
+  GestureDetectionResult,
+  Point3D,
+  TrackingMetrics,
+  VirtualCursorState,
+} from './types/gestures';
+import { AuditLogEntry, MedicalScanSeries, PatientProfile } from './types/medical';
+
+export const App: React.FC = () => {
+  // Navigation & Patient Selection State
+  const [activeTab, setActiveTab] = useState<ActiveTab>('RADIOLOGY');
+  const [currentPatientId, setCurrentPatientId] = useState<string>('pt-001');
+
+  // Modals & UI Toggles
+  const [isAuditModalOpen, setIsAuditModalOpen] = useState<boolean>(false);
+  const [isHelpModalOpen, setIsHelpModalOpen] = useState<boolean>(false);
+  const [isMuted, setIsMuted] = useState<boolean>(false);
+
+  // Vision Pipeline & Tracking State
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [isCameraActive, setIsCameraActive] = useState<boolean>(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [isSimulated, setIsSimulated] = useState<boolean>(false);
+
+  const [landmarks, setLandmarks] = useState<Point3D[] | null>(null);
+  const [metrics, setMetrics] = useState<TrackingMetrics>({
+    fps: 0,
+    latencyMs: 0,
+    handDetected: false,
+    lightQuality: 'OPTIMAL',
+    distanceQuality: 'OPTIMAL',
+  });
+
+  const [gestureResult, setGestureResult] = useState<GestureDetectionResult>({
+    gesture: 'NONE',
+    confidence: 0,
+    pinchDistance: 1,
+    pinchCenter: { x: 0.5, y: 0.5 },
+    rawCursor: { x: 0.5, y: 0.5 },
+    handPresent: false,
+    handedness: 'Right',
+    velocity: { x: 0, y: 0 },
+    isFist: false,
+    isThumbsUp: false,
+    isPeace: false,
+    depthEstimate: 1,
+  });
+
+  const [cursor, setCursor] = useState<VirtualCursorState>(cursorManager.getState());
+
+  // Compliance Audit Logs
+  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([
+    {
+      id: 'log-init-1',
+      timestamp: '14:00:12 UTC',
+      category: 'SYSTEM',
+      action: 'SterileTouch Terminal Initialized',
+      details: 'OR Suite 3 terminal calibrated. Touchless sterile field active.',
+      operator: 'System Daemon',
+      verifiedTouchless: true,
+    },
+    {
+      id: 'log-init-2',
+      timestamp: '14:05:44 UTC',
+      category: 'CHECKLIST',
+      action: 'Verified: Patient Identity & Consent',
+      details: 'Phase 1: Sign In verbally confirmed.',
+      operator: 'Dr. S. K. Nair (Anesthesia)',
+      verifiedTouchless: true,
+    },
+  ]);
+
+  const activePatient: PatientProfile =
+    MOCK_PATIENTS.find((p) => p.id === currentPatientId) || MOCK_PATIENTS[0];
+
+  const activeScan: MedicalScanSeries =
+    MOCK_SCANS.find((s) => s.patientId === currentPatientId) || MOCK_SCANS[0];
+
+  // Camera stream lifecycle
+  const startCamera = async () => {
+    setCameraError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          width: { ideal: 640 },
+          height: { ideal: 480 },
+          frameRate: { ideal: 30 },
+        },
+      });
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
+
+      await handTrackingService.initialize();
+
+      if (videoRef.current) {
+        handTrackingService.start(
+          videoRef.current,
+          (rawLandmarks, handedness, currentMetrics) => {
+            setLandmarks(rawLandmarks);
+            setMetrics(currentMetrics);
+
+            if (rawLandmarks) {
+              const detected = gestureClassifier.classify(rawLandmarks, handedness);
+              setGestureResult(detected);
+
+              const updatedCursor = cursorManager.update(
+                detected.rawCursor,
+                detected.gesture === 'PINCH',
+                detected.isFist,
+                detected.handPresent
+              );
+              setCursor(updatedCursor);
+
+              // Gesture triggers
+              if (detected.gesture === 'SWIPE_LEFT') {
+                audioService.playSwipe();
+              } else if (detected.gesture === 'SWIPE_RIGHT') {
+                audioService.playSwipe();
+              }
+            } else {
+              setGestureResult((prev) => ({
+                ...prev,
+                gesture: 'NONE',
+                confidence: 0,
+                handPresent: false,
+                isFist: false,
+                isThumbsUp: false,
+              }));
+              setCursor(cursorManager.update({ x: 0.5, y: 0.5 }, false, false, false));
+            }
+          }
+        );
+      }
+
+      setIsCameraActive(true);
+      setIsSimulated(false);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn('Webcam access error:', msg);
+      setCameraError(msg);
+      setIsCameraActive(false);
+      // Automatically fallback to simulation mode so demo never fails
+      setIsSimulated(true);
+    }
+  };
+
+  const stopCamera = () => {
+    handTrackingService.stop();
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach((track) => track.stop());
+      videoRef.current.srcObject = null;
+    }
+    setIsCameraActive(false);
+    setLandmarks(null);
+  };
+
+  const handleToggleCamera = () => {
+    if (isCameraActive) {
+      stopCamera();
+    } else {
+      startCamera();
+    }
+  };
+
+  const handleToggleSimulated = () => {
+    if (!isSimulated) {
+      stopCamera();
+      setIsSimulated(true);
+      setCursor((prev) => ({ ...prev, isVisible: true }));
+      setGestureResult((prev) => ({ ...prev, handPresent: true }));
+    } else {
+      setIsSimulated(false);
+      setCursor((prev) => ({ ...prev, isVisible: false }));
+      setGestureResult((prev) => ({ ...prev, handPresent: false }));
+    }
+  };
+
+  // Keyboard Simulation Controls (Fail-safe hackathon presentation shortcuts)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Space: Toggle Pinch
+      if (e.code === 'Space' && !e.repeat) {
+        e.preventDefault();
+        setCursor((prev) =>
+          cursorManager.update(
+            { x: 1 - prev.normalizedX, y: prev.normalizedY },
+            true,
+            prev.isFrozen,
+            true
+          )
+        );
+        setGestureResult((prev) => ({ ...prev, gesture: 'PINCH', confidence: 0.95 }));
+      }
+
+      // 'F': Toggle Sterile Freeze
+      if (e.key.toLowerCase() === 'f' && !e.repeat) {
+        setGestureResult((prev) => {
+          const nextFist = !prev.isFist;
+          cursorManager.update(
+            { x: 1 - cursor.normalizedX, y: cursor.normalizedY },
+            cursor.isPinching,
+            nextFist,
+            true
+          );
+          return {
+            ...prev,
+            isFist: nextFist,
+            gesture: nextFist ? 'FIST' : 'POINT',
+            confidence: 0.96,
+          };
+        });
+        setCursor(cursorManager.getState());
+      }
+
+      // 'T': Thumbs Up
+      if (e.key.toLowerCase() === 't' && !e.repeat) {
+        setGestureResult((prev) => ({
+          ...prev,
+          isThumbsUp: true,
+          gesture: 'THUMBS_UP',
+          confidence: 0.98,
+        }));
+      }
+
+      // 'M': Mute audio
+      if (e.key.toLowerCase() === 'm' && !e.repeat) {
+        handleToggleMute();
+      }
+
+      // Tabs 1 - 4
+      if (e.key === '1') setActiveTab('RADIOLOGY');
+      if (e.key === '2') setActiveTab('CHECKLIST');
+      if (e.key === '3') setActiveTab('VITALS');
+      if (e.key === '4') setActiveTab('RECORDS');
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.code === 'Space') {
+        setCursor((prev) =>
+          cursorManager.update(
+            { x: 1 - prev.normalizedX, y: prev.normalizedY },
+            false,
+            prev.isFrozen,
+            true
+          )
+        );
+        setGestureResult((prev) => ({ ...prev, gesture: 'POINT', confidence: 0.8 }));
+      }
+      if (e.key.toLowerCase() === 't') {
+        setGestureResult((prev) => ({
+          ...prev,
+          isThumbsUp: false,
+          gesture: 'POINT',
+        }));
+      }
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isSimulated) {
+        const normX = e.clientX / window.innerWidth;
+        const normY = e.clientY / window.innerHeight;
+        // cursorManager mirrors horizontal coordinate
+        const updated = cursorManager.update(
+          { x: 1 - normX, y: normY },
+          cursor.isPinching,
+          cursor.isFrozen,
+          true
+        );
+        setCursor(updated);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    window.addEventListener('mousemove', handleMouseMove);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, [isSimulated, cursor.isPinching, cursor.isFrozen]);
+
+  const handleToggleMute = () => {
+    const next = !isMuted;
+    setIsMuted(next);
+    audioService.setMuted(next);
+    if (!next) {
+      audioService.playClick();
+    }
+  };
+
+  const handleAddAuditLog = (entry: AuditLogEntry) => {
+    setAuditLogs((prev) => [entry, ...prev]);
+  };
+
+  return (
+    <div className="flex flex-col h-screen w-screen overflow-hidden bg-slate-950 text-slate-100 font-sans relative">
+      {/* Operating Room Header */}
+      <Header
+        patient={activePatient}
+        isMuted={isMuted}
+        onToggleMute={handleToggleMute}
+        onOpenHelp={() => setIsHelpModalOpen(true)}
+      />
+
+      {/* Navigation Bar & Case Switcher */}
+      <NavigationBar
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        patients={MOCK_PATIENTS}
+        currentPatientId={currentPatientId}
+        onPatientChange={setCurrentPatientId}
+      />
+
+      {/* Dynamic Telemetry Gesture Indicator Badge (Top Center) */}
+      <div className="absolute top-16 left-1/2 -translate-x-1/2 z-30 pointer-events-none">
+        <GestureBadge detection={gestureResult} />
+      </div>
+
+      {/* Main Workspace Display Port */}
+      <main className="flex-1 relative overflow-hidden flex flex-col">
+        {activeTab === 'RADIOLOGY' && (
+          <MedicalViewer scan={activeScan} cursor={cursor} />
+        )}
+
+        {activeTab === 'CHECKLIST' && (
+          <SurgicalChecklist
+            gestureResult={gestureResult}
+            onAuditLogAdded={handleAddAuditLog}
+            onOpenAuditModal={() => setIsAuditModalOpen(true)}
+          />
+        )}
+
+        {activeTab === 'VITALS' && (
+          <VitalsMonitor
+            onAcknowledgeAlarm={() => {
+              handleAddAuditLog({
+                id: `log-alm-${Date.now()}`,
+                timestamp: `${new Date().toLocaleTimeString('en-US', { hour12: false })} UTC`,
+                category: 'SYSTEM',
+                action: 'Critical Alarm Silenced & Reset',
+                details: 'Hemodynamic stability acknowledged touchlessly by surgical team.',
+                operator: 'Dr. Aris Thorne (Lead Surgeon)',
+                verifiedTouchless: true,
+              });
+            }}
+          />
+        )}
+
+        {activeTab === 'RECORDS' && (
+          <PatientRecords patient={activePatient} />
+        )}
+      </main>
+
+      {/* Picture-In-Picture Surgeon HUD Camera Feed (Bottom-Right) */}
+      <CameraFeed
+        videoRef={videoRef}
+        landmarks={landmarks}
+        metrics={metrics}
+        isSimulated={isSimulated}
+        onToggleSimulated={handleToggleSimulated}
+        isCameraActive={isCameraActive}
+        onToggleCamera={handleToggleCamera}
+        cameraError={cameraError}
+      />
+
+      {/* Virtual Sterile Pointer & Dwell Ring Overlay */}
+      <VirtualCursor cursor={cursor} />
+
+      {/* Modals */}
+      <AuditLogModal
+        isOpen={isAuditModalOpen}
+        onClose={() => setIsAuditModalOpen(false)}
+        logs={auditLogs}
+      />
+
+      <GesturesHelpModal
+        isOpen={isHelpModalOpen}
+        onClose={() => setIsHelpModalOpen(false)}
+      />
+    </div>
+  );
+};
+
+export default App;
