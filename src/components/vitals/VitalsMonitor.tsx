@@ -10,13 +10,16 @@ import {
   Wind,
 } from 'lucide-react';
 import { VitalsMetrics } from '../../types/medical';
+import { VoiceCommandResult } from '../../types/speech';
 import { audioService } from '../../services/audioFeedback';
 
 interface VitalsMonitorProps {
+  voiceCommand?: VoiceCommandResult | null;
   onAcknowledgeAlarm?: () => void;
 }
 
 export const VitalsMonitor: React.FC<VitalsMonitorProps> = ({
+  voiceCommand,
   onAcknowledgeAlarm,
 }) => {
   const ecgCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -81,6 +84,16 @@ export const VitalsMonitor: React.FC<VitalsMonitorProps> = ({
     audioService.playClick();
     onAcknowledgeAlarm?.();
   };
+
+  // Multimodal Voice Commands Listener
+  useEffect(() => {
+    if (!voiceCommand) return;
+    if (voiceCommand.intent === 'SILENCE_ALARM') {
+      silenceAlarm();
+    } else if (voiceCommand.intent === 'SIMULATE_EMERGENCY') {
+      toggleEmergencySimulation();
+    }
+  }, [voiceCommand]);
 
   // Real-time Canvas ECG Renderer
   useEffect(() => {

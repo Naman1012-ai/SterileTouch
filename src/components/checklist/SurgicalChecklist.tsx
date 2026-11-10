@@ -14,17 +14,20 @@ import {
 } from 'lucide-react';
 import { AuditLogEntry, ChecklistPhase, WHOChecklistItem } from '../../types/medical';
 import { GestureDetectionResult } from '../../types/gestures';
+import { VoiceCommandResult } from '../../types/speech';
 import { INITIAL_WHO_CHECKLIST } from '../../data/mockChecklist';
 import { audioService } from '../../services/audioFeedback';
 
 interface SurgicalChecklistProps {
   gestureResult: GestureDetectionResult;
+  voiceCommand?: VoiceCommandResult | null;
   onAuditLogAdded: (entry: AuditLogEntry) => void;
   onOpenAuditModal: () => void;
 }
 
 export const SurgicalChecklist: React.FC<SurgicalChecklistProps> = ({
   gestureResult,
+  voiceCommand,
   onAuditLogAdded,
   onOpenAuditModal,
 }) => {
@@ -62,6 +65,16 @@ export const SurgicalChecklist: React.FC<SurgicalChecklistProps> = ({
 
     return () => clearInterval(interval);
   }, [gestureResult.isThumbsUp, hoveredItemId]);
+
+  // Voice command checklist sign-off
+  useEffect(() => {
+    if (voiceCommand?.intent === 'SIGN_OFF_CHECKLIST') {
+      const pending = currentPhaseItems.find((i) => !i.isCompleted) || items.find((i) => !i.isCompleted);
+      if (pending) {
+        completeItem(pending.id, 'THUMBS_UP');
+      }
+    }
+  }, [voiceCommand]);
 
   const completeItem = (itemId: string, via: 'THUMBS_UP' | 'CLICK' = 'CLICK') => {
     setItems((prev) =>

@@ -17,6 +17,7 @@ import { handTrackingService } from './services/handTracking';
 import { gestureClassifier } from './services/gestureClassifier';
 import { cursorManager } from './services/cursorManager';
 import { audioService } from './services/audioFeedback';
+import { voiceAssistantService } from './services/voiceAssistant';
 
 import {
   GestureDetectionResult,
@@ -25,6 +26,7 @@ import {
   VirtualCursorState,
 } from './types/gestures';
 import { AuditLogEntry, MedicalScanSeries, PatientProfile } from './types/medical';
+import { VoiceCommandResult } from './types/speech';
 
 export const App: React.FC = () => {
   // Navigation & Patient Selection State
@@ -95,6 +97,81 @@ export const App: React.FC = () => {
 
   const activeScan: MedicalScanSeries =
     MOCK_SCANS.find((s) => s.patientId === currentPatientId) || MOCK_SCANS[0];
+
+  const [lastVoiceCommand, setLastVoiceCommand] = useState<VoiceCommandResult | null>(null);
+
+  // Wire Voice Assistant commands into Application State
+  useEffect(() => {
+    const handleVoiceCommand = (cmd: VoiceCommandResult) => {
+      setLastVoiceCommand(cmd);
+
+      switch (cmd.intent) {
+        case 'NAV_RADIOLOGY':
+          setActiveTab('RADIOLOGY');
+          break;
+        case 'NAV_CHECKLIST':
+          setActiveTab('CHECKLIST');
+          break;
+        case 'NAV_VITALS':
+          setActiveTab('VITALS');
+          break;
+        case 'NAV_RECORDS':
+          setActiveTab('RECORDS');
+          break;
+        case 'SWITCH_PATIENT': {
+          const idx = Number(cmd.params?.patientIndex);
+          if (idx === 1) setCurrentPatientId('pt-001');
+          else if (idx === 2) setCurrentPatientId('pt-002');
+          else if (idx === 3) setCurrentPatientId('pt-003');
+          break;
+        }
+        case 'OPEN_AUDIT_LOG':
+          setIsAuditModalOpen(true);
+          break;
+        case 'SHOW_HELP':
+          setIsHelpModalOpen(true);
+          break;
+        case 'TOGGLE_AUDIO':
+          handleToggleMute();
+          break;
+        case 'STERILE_FREEZE':
+          cursorManager.update(
+            { x: 1 - cursor.normalizedX, y: cursor.normalizedY },
+            cursor.isPinching,
+            true,
+            true
+          );
+          setCursor(cursorManager.getState());
+          setGestureResult((prev) => ({
+            ...prev,
+            isFist: true,
+            gesture: 'FIST',
+            confidence: 0.98,
+          }));
+          break;
+        case 'STERILE_UNFREEZE':
+          cursorManager.update(
+            { x: 1 - cursor.normalizedX, y: cursor.normalizedY },
+            cursor.isPinching,
+            false,
+            true
+          );
+          setCursor(cursorManager.getState());
+          setGestureResult((prev) => ({
+            ...prev,
+            isFist: false,
+            gesture: 'POINT',
+            confidence: 0.9,
+          }));
+          break;
+      }
+    };
+
+    voiceAssistantService.onCommand(handleVoiceCommand);
+    return () => {
+      voiceAssistantService.removeCommandListener(handleVoiceCommand);
+    };
+  }, [cursor.normalizedX, cursor.normalizedY, cursor.isPinching]);
 
   // Camera stream lifecycle
   const startCamera = async () => {
@@ -345,12 +422,13 @@ export const App: React.FC = () => {
       {/* Main Workspace Display Port */}
       <main className="flex-1 relative overflow-hidden flex flex-col">
         {activeTab === 'RADIOLOGY' && (
-          <MedicalViewer scan={activeScan} cursor={cursor} />
+          <MedicalViewer scan={activeScan} cursor={cursor} voiceCommand={lastVoiceCommand} />
         )}
 
         {activeTab === 'CHECKLIST' && (
           <SurgicalChecklist
             gestureResult={gestureResult}
+            voiceCommand={lastVoiceCommand}
             onAuditLogAdded={handleAddAuditLog}
             onOpenAuditModal={() => setIsAuditModalOpen(true)}
           />
@@ -358,6 +436,7 @@ export const App: React.FC = () => {
 
         {activeTab === 'VITALS' && (
           <VitalsMonitor
+            voiceCommand={lastVoiceCommand}
             onAcknowledgeAlarm={() => {
               handleAddAuditLog({
                 id: `log-alm-${Date.now()}`,

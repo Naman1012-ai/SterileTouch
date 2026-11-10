@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { PatientProfile } from '../../types/medical';
 import { audioService } from '../../services/audioFeedback';
+import { VoiceIndicatorHUD } from '../hud/VoiceIndicatorHUD';
 
 interface HeaderProps {
   patient: PatientProfile;
@@ -95,6 +96,9 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Right Controls & Clock */}
       <div className="flex items-center gap-2.5">
+        {/* Voice Assistant HUD */}
+        <VoiceIndicatorHUD />
+
         {/* Live Clock */}
         <div className="font-mono text-xs text-slate-300 bg-slate-900 border border-slate-800 px-2.5 py-1 rounded-md hidden sm:flex items-center gap-1.5">
           <Activity className="w-3.5 h-3.5 text-cyan-400" />

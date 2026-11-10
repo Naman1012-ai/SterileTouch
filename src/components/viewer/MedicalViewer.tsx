@@ -17,11 +17,13 @@ import {
 } from 'lucide-react';
 import { CaliperMeasurement, MedicalScanSeries, WindowPreset } from '../../types/medical';
 import { Point2D, VirtualCursorState } from '../../types/gestures';
+import { VoiceCommandResult } from '../../types/speech';
 import { audioService } from '../../services/audioFeedback';
 
 interface MedicalViewerProps {
   scan: MedicalScanSeries;
   cursor: VirtualCursorState;
+  voiceCommand?: VoiceCommandResult | null;
   onSliceChange?: (slice: number) => void;
 }
 
@@ -36,6 +38,7 @@ const WINDOW_PRESETS: WindowPreset[] = [
 export const MedicalViewer: React.FC<MedicalViewerProps> = ({
   scan,
   cursor,
+  voiceCommand,
   onSliceChange,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -109,6 +112,59 @@ export const MedicalViewer: React.FC<MedicalViewerProps> = ({
     setPan({ x: 0, y: 0 });
     audioService.playClick();
   };
+
+  // Multimodal Voice Commands Handler
+  useEffect(() => {
+    if (!voiceCommand) return;
+    switch (voiceCommand.intent) {
+      case 'NEXT_SLICE':
+        handleNextSlice();
+        break;
+      case 'PREV_SLICE':
+        handlePrevSlice();
+        break;
+      case 'GO_TO_SLICE': {
+        const num = Number(voiceCommand.params?.sliceNumber);
+        if (!isNaN(num) && num >= 1 && num <= scan.totalSlices) {
+          setSliceIndex(num);
+          audioService.playTick(900);
+          onSliceChange?.(num);
+        }
+        break;
+      }
+      case 'ZOOM_IN':
+        handleZoomIn();
+        break;
+      case 'ZOOM_OUT':
+        handleZoomOut();
+        break;
+      case 'RESET_VIEW':
+        handleResetView();
+        break;
+      case 'SET_WINDOW_PRESET': {
+        const preset = voiceCommand.params?.preset as WindowPreset['id'];
+        if (preset) {
+          setActivePreset(preset);
+          audioService.playClick();
+        }
+        break;
+      }
+      case 'TOGGLE_CALIPER':
+        setIsCaliperActive((prev) => !prev);
+        setCaliperPendingPoint(null);
+        audioService.playClick();
+        break;
+      case 'CLEAR_CALIPER':
+        setMeasurements([]);
+        setCaliperPendingPoint(null);
+        audioService.playClick();
+        break;
+      case 'TOGGLE_AI_FINDINGS':
+        setShowAiOverlay((prev) => !prev);
+        audioService.playClick();
+        break;
+    }
+  }, [voiceCommand]);
 
   // Canvas click handler for Caliper measurement placement
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
