@@ -54,8 +54,11 @@ export const MedicalViewer: React.FC<MedicalViewerProps> = ({
   const [caliperPendingPoint, setCaliperPendingPoint] = useState<Point2D | null>(null);
   const [measurements, setMeasurements] = useState<CaliperMeasurement[]>([]);
 
-  // Pinch-pan tracking
+  // Pinch 3D Spatial Pan & Zoom Tracking
   const lastCursorPos = useRef<Point2D | null>(null);
+  const initialPinchDepth = useRef<number | null>(null);
+  const initialPinchZoom = useRef<number>(1.0);
+  const lastTickZoom = useRef<number>(1.0);
 
   // Sync slice when scan changes
   useEffect(() => {
@@ -63,21 +66,56 @@ export const MedicalViewer: React.FC<MedicalViewerProps> = ({
     setZoom(1.0);
     setPan({ x: 0, y: 0 });
     setCaliperPendingPoint(null);
+    initialPinchDepth.current = null;
   }, [scan.id]);
 
-  // Touchless pinch drag / pan handling
+  // Touchless continuous 3D spatial pinch drag (pan) and depth (zoom) handling
   useEffect(() => {
     if (cursor.isPinching && !cursor.isFrozen) {
+      // 1. Initial pinch capture
+      if (initialPinchDepth.current === null) {
+        initialPinchDepth.current = cursor.depth || 1.0;
+        initialPinchZoom.current = zoom;
+        lastTickZoom.current = zoom;
+      }
+
+      // 2. Continuous 2D Pan (X / Y)
       if (lastCursorPos.current) {
         const dx = cursor.x - lastCursorPos.current.x;
         const dy = cursor.y - lastCursorPos.current.y;
         setPan((prev) => ({ x: prev.x + dx, y: prev.y + dy }));
       }
       lastCursorPos.current = { x: cursor.x, y: cursor.y };
+
+      // 3. Continuous 3D Spatial Depth Zoom (Z forward/back)
+      if (initialPinchDepth.current !== null && cursor.depth !== undefined) {
+        // depthEstimate = 0.28 / palmScale
+        // Moving closer to screen -> depth decreases -> depthDelta > 0 (Zoom In)
+        // Moving away from screen -> depth increases -> depthDelta < 0 (Zoom Out)
+        const depthDelta = initialPinchDepth.current - cursor.depth;
+        const DEAD_BAND = 0.03; // Deadband to prevent jitter during pure pan
+
+        if (Math.abs(depthDelta) > DEAD_BAND) {
+          const effectiveDelta = depthDelta > 0 ? depthDelta - DEAD_BAND : depthDelta + DEAD_BAND;
+          const zoomMultiplier = 1 + effectiveDelta * 2.2;
+          const nextZoom = Math.min(
+            4.5,
+            Math.max(0.6, Number((initialPinchZoom.current * zoomMultiplier).toFixed(2)))
+          );
+          setZoom(nextZoom);
+
+          // Subtle audio tactile tick on every 0.25x zoom milestone
+          if (Math.abs(nextZoom - lastTickZoom.current) >= 0.25) {
+            audioService.playTick(nextZoom > lastTickZoom.current ? 920 : 760);
+            lastTickZoom.current = nextZoom;
+          }
+        }
+      }
     } else {
       lastCursorPos.current = null;
+      initialPinchDepth.current = null;
     }
-  }, [cursor.isPinching, cursor.x, cursor.y, cursor.isFrozen]);
+  }, [cursor.isPinching, cursor.x, cursor.y, cursor.depth, cursor.isFrozen]);
 
   const handleNextSlice = () => {
     if (sliceIndex < scan.totalSlices) {
@@ -111,6 +149,18 @@ export const MedicalViewer: React.FC<MedicalViewerProps> = ({
     setZoom(1.0);
     setPan({ x: 0, y: 0 });
     audioService.playClick();
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    const delta = e.deltaY < 0 ? 0.15 : -0.15;
+    setZoom((prev) => {
+      const next = Math.min(4.5, Math.max(0.6, Number((prev + delta).toFixed(2))));
+      if (next !== prev) {
+        audioService.playTick(delta > 0 ? 920 : 760);
+      }
+      return next;
+    });
   };
 
   // Multimodal Voice Commands Handler
@@ -504,6 +554,7 @@ export const MedicalViewer: React.FC<MedicalViewerProps> = ({
       {/* Main Radiology Viewport Canvas */}
       <div
         ref={containerRef}
+        onWheel={handleWheel}
         className="flex-1 relative flex items-center justify-center overflow-hidden bg-black cursor-crosshair"
       >
         <canvas
@@ -513,6 +564,43 @@ export const MedicalViewer: React.FC<MedicalViewerProps> = ({
           onClick={handleCanvasClick}
           className="max-w-full max-h-full aspect-4/3 block shadow-2xl"
         />
+
+        {/* 3D Spatial Depth Pinch-to-Zoom & Pan Active Floating HUD Indicator */}
+        {cursor.isPinching && !cursor.isFrozen && (
+          <div className="absolute top-5 left-1/2 -translate-x-1/2 bg-slate-950/90 border border-cyan-500/80 px-4 py-2.5 rounded-2xl flex items-center gap-3.5 backdrop-blur-md shadow-[0_0_25px_rgba(6,182,212,0.35)] z-30 transition-all pointer-events-none">
+            <div className="relative flex items-center justify-center">
+              <span className="w-3 h-3 rounded-full bg-cyan-400 animate-ping absolute" />
+              <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 relative" />
+            </div>
+            <div className="flex flex-col text-left">
+              <div className="flex items-center gap-2 text-xs font-mono font-bold text-cyan-300">
+                <span>3D SPATIAL PINCH</span>
+                <span className="text-slate-500">•</span>
+                <span className="text-white">ZOOM: {Math.round(zoom * 100)}%</span>
+                <span className="text-slate-500">•</span>
+                <span className="text-cyan-400 text-[10px]">DEPTH: {(cursor.depth || 1.0).toFixed(2)}x</span>
+              </div>
+              <span className="text-[10px] text-slate-300/80 font-mono tracking-tight">
+                Push hand closer to Zoom In • Pull back to Zoom Out • Shift to Pan
+              </span>
+            </div>
+            {/* Interactive Proximity Depth Gauge */}
+            <div className="flex flex-col items-center gap-0.5 pl-2 border-l border-slate-700/80">
+              <span className="text-[9px] font-mono text-cyan-400/90">PROXIMITY</span>
+              <div className="w-16 h-2 bg-slate-800 rounded-full overflow-hidden border border-cyan-500/40 p-0.5">
+                <div
+                  className="h-full bg-gradient-to-r from-cyan-500 to-emerald-400 rounded-full transition-all duration-75"
+                  style={{
+                    width: `${Math.min(
+                      100,
+                      Math.max(10, ((2.5 - (cursor.depth || 1.0)) / 2.1) * 100)
+                    )}%`,
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Floating Slice Scrub Bar (For multi-slice CT/MRI) */}
         {scan.totalSlices > 1 && (

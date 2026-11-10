@@ -96,8 +96,10 @@ export const VirtualCursor: React.FC<VirtualCursorProps> = ({ cursor }) => {
         )}
 
         {cursor.isPinching && !cursor.isFrozen && (
-          <div className="absolute top-10 whitespace-nowrap px-2 py-0.5 rounded bg-cyan-950/90 border border-cyan-500 text-[10px] font-mono tracking-wider font-semibold text-cyan-300 uppercase shadow-lg shadow-cyan-950/50">
-            PINCH ENGAGED
+          <div className="absolute top-10 whitespace-nowrap px-2.5 py-0.5 rounded bg-cyan-950/90 border border-cyan-500 text-[10px] font-mono tracking-wider font-semibold text-cyan-300 uppercase shadow-lg shadow-cyan-950/50 flex items-center gap-1.5">
+            <span>PINCH ACTIVE</span>
+            <span className="text-cyan-400 font-bold">•</span>
+            <span className="text-white">Z: {(cursor.depth || 1.0).toFixed(2)}</span>
           </div>
         )}
       </div>

@@ -233,7 +233,8 @@ export const App: React.FC = () => {
                 detected.rawCursor,
                 detected.gesture === 'PINCH',
                 detected.isFist,
-                detected.handPresent
+                detected.handPresent,
+                detected.depthEstimate
               );
               setCursor(updatedCursor);
 

@@ -16,9 +16,11 @@ export class CursorManager {
     hoverProgress: 0,
     activeTargetId: null,
     mode: 'POINTER',
+    depth: 1.0,
   };
 
   private smoothedPos: Point2D = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+  private smoothedDepth: number = 1.0;
   private currentTarget: HTMLElement | null = null;
   private hoverStartTime: number = 0;
   private readonly DWELL_THRESHOLD_MS: number = 750; // Dwell hold time to trigger click
@@ -45,7 +47,8 @@ export class CursorManager {
     rawNormalized: Point2D,
     isPinching: boolean,
     isFist: boolean,
-    handPresent: boolean
+    handPresent: boolean,
+    depth: number = 1.0
   ): VirtualCursorState {
     if (!handPresent) {
       this.state.isVisible = false;
@@ -55,6 +58,10 @@ export class CursorManager {
     }
 
     this.state.isVisible = true;
+
+    // Smooth 3D depth estimate
+    this.smoothedDepth += (depth - this.smoothedDepth) * 0.22;
+    this.state.depth = Number(this.smoothedDepth.toFixed(3));
 
     // Sterile Freeze Toggle
     if (isFist) {

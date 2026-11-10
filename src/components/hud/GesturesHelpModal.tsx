@@ -36,11 +36,11 @@ export const GesturesHelpModal: React.FC<GesturesHelpModalProps> = ({
         'Extend index finger to direct the surgical cursor. Hover over buttons for 700ms to trigger a touchless dwell click.',
     },
     {
-      name: 'Index-Thumb Pinch',
+      name: '3D Spatial Pinch-to-Zoom & Pan',
       icon: <Move className="w-5 h-5 text-cyan-400" />,
-      tag: 'Zoom & Pan',
+      tag: 'Depth Zoom & Pan',
       description:
-        'Pinch thumb and index finger together to grab radiological scans, drag-pan across the viewport, or pinch-click buttons.',
+        'Pinch thumb and index together to grab the scan. Push your hand forward towards the screen to zoom in, pull back to zoom out, and move sideways to pan.',
     },
     {
       name: 'Air Swipe (Left / Right)',
@@ -261,6 +261,9 @@ export const GesturesHelpModal: React.FC<GesturesHelpModalProps> = ({
                   <span className="text-cyan-400 font-bold">Hold Space</span>: Pinch / Drag
                 </div>
                 <div className="bg-slate-900 p-2 rounded border border-slate-800">
+                  <span className="text-cyan-400 font-bold">Mouse Wheel</span>: Continuous Zoom
+                </div>
+                <div className="bg-slate-900 p-2 rounded border border-slate-800">
                   <span className="text-rose-400 font-bold">Press F</span>: Sterile Freeze
                 </div>
                 <div className="bg-slate-900 p-2 rounded border border-slate-800">
@@ -274,9 +277,6 @@ export const GesturesHelpModal: React.FC<GesturesHelpModalProps> = ({
                 </div>
                 <div className="bg-slate-900 p-2 rounded border border-slate-800">
                   <span className="text-amber-400 font-bold">Keys 1 - 4</span>: Switch Modules
-                </div>
-                <div className="bg-slate-900 p-2 rounded border border-slate-800">
-                  <span className="text-emerald-400 font-bold">Press M</span>: Toggle Audio
                 </div>
               </div>
             </div>

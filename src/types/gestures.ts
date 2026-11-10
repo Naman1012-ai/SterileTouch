@@ -48,6 +48,7 @@ export interface VirtualCursorState {
   hoverProgress: number; // 0..1 dwell progress ring
   activeTargetId: string | null;
   mode: 'POINTER' | 'CALIPER' | 'PAN_ZOOM';
+  depth: number; // smoothed depth estimate (1.0 nominal, <1.0 closer, >1.0 farther)
 }
 
 export interface TrackingMetrics {
