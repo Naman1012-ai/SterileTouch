@@ -2,7 +2,7 @@ import React from 'react';
 import { Activity, ClipboardCheck, FileText, Scan, Tv, UserCheck } from 'lucide-react';
 import { PatientProfile } from '../../types/medical';
 import { useWorkstation } from '../../context/WorkstationContext';
-import { Badge } from '../ui/Badge';
+import { Tooltip } from '../ui/Tooltip';
 
 export type ActiveTab = 'RADIOLOGY' | 'CHECKLIST' | 'VITALS' | 'RECORDS' | 'PACS_MIRROR';
 
@@ -92,72 +92,77 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
-            <button
+            <Tooltip
               key={tab.id}
-              role="tab"
-              aria-selected={isActive}
-              aria-controls={`panel-${tab.id.toLowerCase()}`}
-              id={`tab-${tab.id.toLowerCase()}`}
-              onClick={() => onTabChange(tab.id)}
-              data-touchless-clickable="true"
-              title={`${tab.label} (Press ${tab.hotkey})`}
-              className={`flex items-center gap-2.5 rounded-xl font-semibold transition-all relative cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 ${
-                isSimple
-                  ? 'px-4 py-2.5 text-sm min-h-[48px]'
-                  : 'px-3.5 py-1.5 text-xs min-h-[38px]'
-              } ${
-                isActive
-                  ? 'bg-slate-900 text-white border border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.25)]'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60 border border-transparent'
-              }`}
+              content={tab.label}
+              shortcut={`Key ${tab.hotkey}`}
+              position="bottom"
             >
-              {/* Tab Icon */}
-              <div
-                className={`transition-colors shrink-0 ${
-                  isActive ? 'text-emerald-400' : 'text-slate-400'
-                }`}
-              >
-                {tab.icon}
-              </div>
-
-              {/* Tab Label */}
-              <span className="tracking-wide">
-                <span className="hidden sm:inline">{tab.label}</span>
-                <span className="sm:hidden">{tab.shortLabel}</span>
-              </span>
-
-              {/* Hotkey Tag */}
-              <span
-                className={`text-[9px] font-mono px-1 py-0.5 rounded font-semibold hidden md:inline ${
+              <button
+                role="tab"
+                aria-selected={isActive}
+                aria-controls={`panel-${tab.id.toLowerCase()}`}
+                id={`tab-${tab.id.toLowerCase()}`}
+                onClick={() => onTabChange(tab.id)}
+                data-touchless-clickable="true"
+                className={`flex items-center gap-2.5 rounded-xl font-semibold transition-all relative cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 ${
+                  isSimple
+                    ? 'px-4 py-2.5 text-sm min-h-[48px]'
+                    : 'px-3.5 py-1.5 text-xs min-h-[38px]'
+                } ${
                   isActive
-                    ? 'bg-emerald-950 text-emerald-300 border border-emerald-800/80'
-                    : 'bg-slate-900 text-slate-500 border border-slate-800'
+                    ? 'bg-slate-900 text-white border border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.25)]'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60 border border-transparent'
                 }`}
               >
-                [{tab.hotkey}]
-              </span>
-
-              {/* Modality Badge (Advanced Mode) */}
-              {!isSimple && (
-                <span
-                  className={`text-[9px] font-mono px-1.5 py-0.5 rounded font-normal uppercase hidden lg:inline ${
-                    isActive
-                      ? 'bg-emerald-950/90 text-emerald-300 border border-emerald-800/60'
-                      : 'bg-slate-900 text-slate-500 border border-slate-800/50'
+                {/* Tab Icon */}
+                <div
+                  className={`transition-colors shrink-0 ${
+                    isActive ? 'text-emerald-400' : 'text-slate-400'
                   }`}
                 >
-                  {tab.badge}
-                </span>
-              )}
+                  {tab.icon}
+                </div>
 
-              {/* Active Bottom Glow Line Indicator */}
-              {isActive && (
-                <div
-                  aria-hidden="true"
-                  className="absolute bottom-0 left-3 right-3 h-[2.5px] bg-emerald-400 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.9)]"
-                />
-              )}
-            </button>
+                {/* Tab Label */}
+                <span className="tracking-wide">
+                  <span className="hidden sm:inline">{tab.label}</span>
+                  <span className="sm:hidden">{tab.shortLabel}</span>
+                </span>
+
+                {/* Hotkey Tag */}
+                <span
+                  className={`text-[9px] font-mono px-1 py-0.5 rounded font-semibold hidden md:inline ${
+                    isActive
+                      ? 'bg-emerald-950 text-emerald-300 border border-emerald-800/80'
+                      : 'bg-slate-900 text-slate-500 border border-slate-800'
+                  }`}
+                >
+                  [{tab.hotkey}]
+                </span>
+
+                {/* Modality Badge (Advanced Mode) */}
+                {!isSimple && (
+                  <span
+                    className={`text-[9px] font-mono px-1.5 py-0.5 rounded font-normal uppercase hidden lg:inline ${
+                      isActive
+                        ? 'bg-emerald-950/90 text-emerald-300 border border-emerald-800/60'
+                        : 'bg-slate-900 text-slate-500 border border-slate-800/50'
+                    }`}
+                  >
+                    {tab.badge}
+                  </span>
+                )}
+
+                {/* Active Bottom Glow Line Indicator */}
+                {isActive && (
+                  <div
+                    aria-hidden="true"
+                    className="absolute bottom-0 left-3 right-3 h-[2.5px] bg-emerald-400 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.9)]"
+                  />
+                )}
+              </button>
+            </Tooltip>
           );
         })}
       </div>

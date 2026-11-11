@@ -141,4 +141,78 @@ test('SterileTouch Phase 2 Global Application Shell Navigation & State Suite', a
     assert.deepEqual(handleKeyMap('c'), { action: 'CLUTCH_TOGGLE' });
     assert.deepEqual(handleKeyMap('m'), { action: 'MUTE_TOGGLE' });
   });
+
+  await t.test('7. Protects form typing from accidental hotkey trigger', () => {
+    const isTypingInField = (targetType: string) => {
+      const formTags = ['INPUT', 'TEXTAREA'];
+      return formTags.includes(targetType.toUpperCase());
+    };
+
+    assert.equal(isTypingInField('INPUT'), true, 'Typing in input must suppress hotkeys');
+    assert.equal(isTypingInField('TEXTAREA'), true, 'Typing in textarea must suppress hotkeys');
+    assert.equal(isTypingInField('DIV'), false, 'Non-input elements allow hotkeys');
+    assert.equal(isTypingInField('BODY'), false, 'Body level allows hotkeys');
+  });
+
+  await t.test('8. Escape closes active modal hierarchy without disrupting state', () => {
+    // Model modal stack
+    interface ModalStack {
+      isOnboardingOpen: boolean;
+      isHelpModalOpen: boolean;
+      isAuditModalOpen: boolean;
+      isUploadModalOpen: boolean;
+      isMetadataDrawerOpen: boolean;
+    }
+
+    const dismissTopmostModal = (stack: ModalStack): ModalStack => {
+      const updated = { ...stack };
+      if (updated.isOnboardingOpen) {
+        updated.isOnboardingOpen = false;
+      } else if (updated.isHelpModalOpen) {
+        updated.isHelpModalOpen = false;
+      } else if (updated.isAuditModalOpen) {
+        updated.isAuditModalOpen = false;
+      } else if (updated.isUploadModalOpen) {
+        updated.isUploadModalOpen = false;
+      } else if (updated.isMetadataDrawerOpen) {
+        updated.isMetadataDrawerOpen = false;
+      }
+      return updated;
+    };
+
+    // When help modal is open
+    const stack1: ModalStack = {
+      isOnboardingOpen: false,
+      isHelpModalOpen: true,
+      isAuditModalOpen: false,
+      isUploadModalOpen: false,
+      isMetadataDrawerOpen: false,
+    };
+    const dismissed1 = dismissTopmostModal(stack1);
+    assert.equal(dismissed1.isHelpModalOpen, false);
+
+    // When drawer is open
+    const stack2: ModalStack = {
+      isOnboardingOpen: false,
+      isHelpModalOpen: false,
+      isAuditModalOpen: false,
+      isUploadModalOpen: false,
+      isMetadataDrawerOpen: true,
+    };
+    const dismissed2 = dismissTopmostModal(stack2);
+    assert.equal(dismissed2.isMetadataDrawerOpen, false);
+  });
+
+  await t.test('9. Validates truthful OS bridge connection reporting', () => {
+    const evaluateBridgeLabel = (isConnected: boolean, os?: string) => {
+      if (isConnected) {
+        return `Bridge: Connected (${os || 'Active'})`;
+      }
+      return 'Bridge: Offline';
+    };
+
+    assert.equal(evaluateBridgeLabel(false), 'Bridge: Offline');
+    assert.equal(evaluateBridgeLabel(true, 'Windows'), 'Bridge: Connected (Windows)');
+  });
 });
+

@@ -415,6 +415,42 @@ export const App: React.FC = () => {
   // Keyboard Simulation Controls (Fail-safe hackathon presentation shortcuts)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Do not intercept hotkeys if user is actively typing in an input or textarea
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable ||
+          target.getAttribute('role') === 'textbox')
+      ) {
+        return;
+      }
+
+      // Escape: Dismiss the active overlay/modal without disrupting existing state
+      if (e.key === 'Escape') {
+        if (isOnboardingOpen) {
+          setIsOnboardingOpen(false);
+          return;
+        }
+        if (isHelpModalOpen) {
+          setIsHelpModalOpen(false);
+          return;
+        }
+        if (isAuditModalOpen) {
+          setIsAuditModalOpen(false);
+          return;
+        }
+        if (isUploadModalOpen) {
+          setIsUploadModalOpen(false);
+          return;
+        }
+        if (isMetadataDrawerOpen) {
+          setIsMetadataDrawerOpen(false);
+          return;
+        }
+      }
+
       // Space: Toggle Pinch
       if (e.code === 'Space' && !e.repeat) {
         e.preventDefault();
@@ -529,7 +565,16 @@ export const App: React.FC = () => {
       window.removeEventListener('keyup', handleKeyUp);
       window.removeEventListener('mousemove', handleMouseMove);
     };
-  }, [isSimulated, cursor.isPinching, cursor.isFrozen]);
+  }, [
+    isSimulated,
+    cursor.isPinching,
+    cursor.isFrozen,
+    isOnboardingOpen,
+    isHelpModalOpen,
+    isAuditModalOpen,
+    isUploadModalOpen,
+    isMetadataDrawerOpen,
+  ]);
 
   const handleToggleMute = () => {
     const next = !isMuted;
