@@ -21,6 +21,10 @@ export type GestureType =
   | 'THUMBS_UP'
   | 'PEACE';
 
+export type ClutchState = 'STANDBY' | 'ENGAGING' | 'ENGAGED' | 'CLUTCHED';
+
+export type EngagementMode = 'PINCH_HOLD' | 'DWELL_HOLD' | 'INSTANT_AUTO';
+
 export interface GestureDetectionResult {
   gesture: GestureType;
   confidence: number;
@@ -49,6 +53,10 @@ export interface VirtualCursorState {
   activeTargetId: string | null;
   mode: 'POINTER' | 'CALIPER' | 'PAN_ZOOM';
   depth: number; // smoothed depth estimate (1.0 nominal, <1.0 closer, >1.0 farther)
+  // Midas Touch Defense & Surgical Clutch Telemetry
+  clutchState: ClutchState;
+  clutchProgress: number; // 0..1 engagement transition
+  engagementMode: EngagementMode;
 }
 
 export interface TrackingMetrics {

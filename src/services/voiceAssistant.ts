@@ -390,6 +390,12 @@ export class VoiceAssistantService {
       )
     ) {
       intent = 'NAV_RECORDS';
+    } else if (
+      /(open pacs|pacs mirror|hospital pacs|external pacs|pacs passthrough|zero integration pacs|pacs suite|mirror pacs|stream pacs)/i.test(
+        clean
+      )
+    ) {
+      intent = 'NAV_PACS';
     }
 
     // 9. Gestures Help & Modal Dismissal (e.g. "open gestures", "show gestures", "close guide")
@@ -468,8 +474,12 @@ export class VoiceAssistantService {
       intent = 'SIMULATE_EMERGENCY';
     }
 
-    // 12. Sterile Freeze
-    else if (/(unfreeze|unlock screen|unlock cursor|resume interaction|\bunlock\b)/i.test(clean)) {
+    // 12. Sterile Freeze & Surgical Clutch
+    else if (/(engage cursor|activate cursor|wake cursor|engage tracking|\bengage\b)/i.test(clean)) {
+      intent = 'CLUTCH_ENGAGE';
+    } else if (/(standby mode|cursor standby|disengage cursor|sleep cursor|\bstandby\b|\bdisengage\b)/i.test(clean)) {
+      intent = 'CLUTCH_STANDBY';
+    } else if (/(unfreeze|unlock screen|unlock cursor|resume interaction|\bunlock\b)/i.test(clean)) {
       intent = 'STERILE_UNFREEZE';
     } else if (/(sterile freeze|freeze screen|lock screen|lock cursor|\bfreeze\b)/i.test(clean)) {
       intent = 'STERILE_FREEZE';
@@ -619,6 +629,9 @@ export class VoiceAssistantService {
       case 'NAV_RECORDS':
         this.speak('Patient records');
         break;
+      case 'NAV_PACS':
+        this.speak('PACS passthrough mirror active');
+        break;
       case 'SWITCH_PATIENT':
         this.speak(`Case ${result.params?.patientIndex} loaded`);
         break;
@@ -642,6 +655,12 @@ export class VoiceAssistantService {
         break;
       case 'STERILE_UNFREEZE':
         this.speak('Sterile field unlocked');
+        break;
+      case 'CLUTCH_ENGAGE':
+        this.speak('Cursor engaged');
+        break;
+      case 'CLUTCH_STANDBY':
+        this.speak('Cursor placed on standby');
         break;
       case 'OPEN_AUDIT_LOG':
         this.speak('Opening audit log');

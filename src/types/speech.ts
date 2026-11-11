@@ -14,6 +14,7 @@ export type VoiceCommandIntent =
   | 'SELECT_CHECKLIST_PHASE'
   | 'NAV_VITALS'
   | 'NAV_RECORDS'
+  | 'NAV_PACS'
   | 'SWITCH_PATIENT'
   | 'NEXT_PATIENT'
   | 'PREV_PATIENT'
@@ -35,6 +36,8 @@ export type VoiceCommandIntent =
   | 'RESET_3D_VIEW'
   | 'TOGGLE_3D_HOLO'
   | 'OPEN_TUTORIAL'
+  | 'CLUTCH_ENGAGE'
+  | 'CLUTCH_STANDBY'
   | 'UNKNOWN';
 
 export interface VoiceCommandResult {

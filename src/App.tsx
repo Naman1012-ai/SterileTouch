@@ -5,6 +5,7 @@ import { MedicalViewer } from './components/viewer/MedicalViewer';
 import { SurgicalChecklist } from './components/checklist/SurgicalChecklist';
 import { VitalsMonitor } from './components/vitals/VitalsMonitor';
 import { PatientRecords } from './components/records/PatientRecords';
+import { PacsPassthroughView } from './components/pacs/PacsPassthroughView';
 import { CameraFeed } from './components/hud/CameraFeed';
 import { VirtualCursor } from './components/hud/VirtualCursor';
 import { AuditLogModal } from './components/checklist/AuditLogModal';
@@ -199,6 +200,9 @@ export const App: React.FC = () => {
         case 'NAV_RECORDS':
           setActiveTab('RECORDS');
           break;
+        case 'NAV_PACS':
+          setActiveTab('PACS_MIRROR');
+          break;
         case 'SWITCH_PATIENT': {
           const idx = Number(cmd.params?.patientIndex);
           if (idx === 1) setCurrentPatientId('pt-001');
@@ -279,6 +283,14 @@ export const App: React.FC = () => {
             gesture: 'POINT',
             confidence: 0.9,
           }));
+          break;
+        case 'CLUTCH_ENGAGE':
+          cursorManager.setClutchState('ENGAGED');
+          setCursor(cursorManager.getState());
+          break;
+        case 'CLUTCH_STANDBY':
+          cursorManager.setClutchState('STANDBY');
+          setCursor(cursorManager.getState());
           break;
       }
     };
@@ -404,6 +416,8 @@ export const App: React.FC = () => {
             { x: 1 - prev.normalizedX, y: prev.normalizedY },
             true,
             prev.isFrozen,
+            true,
+            1.0,
             true
           )
         );
@@ -440,16 +454,23 @@ export const App: React.FC = () => {
         }));
       }
 
+      // 'C': Toggle Clutch (Standby / Engaged)
+      if (e.key.toLowerCase() === 'c' && !e.repeat) {
+        cursorManager.toggleClutch();
+        setCursor(cursorManager.getState());
+      }
+
       // 'M': Mute audio
       if (e.key.toLowerCase() === 'm' && !e.repeat) {
         handleToggleMute();
       }
 
-      // Tabs 1 - 4
+      // Tabs 1 - 5
       if (e.key === '1') setActiveTab('RADIOLOGY');
       if (e.key === '2') setActiveTab('CHECKLIST');
       if (e.key === '3') setActiveTab('VITALS');
       if (e.key === '4') setActiveTab('RECORDS');
+      if (e.key === '5') setActiveTab('PACS_MIRROR');
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
@@ -459,6 +480,8 @@ export const App: React.FC = () => {
             { x: 1 - prev.normalizedX, y: prev.normalizedY },
             false,
             prev.isFrozen,
+            true,
+            1.0,
             true
           )
         );
@@ -482,7 +505,9 @@ export const App: React.FC = () => {
           { x: 1 - normX, y: normY },
           cursor.isPinching,
           cursor.isFrozen,
-          true
+          true,
+          1.0,
+          true // Force engaged in simulation mouse mode
         );
         setCursor(updated);
       }
@@ -518,6 +543,7 @@ export const App: React.FC = () => {
       <Header
         patient={activePatient}
         gestureResult={gestureResult}
+        cursor={cursor}
         isMuted={isMuted}
         onToggleMute={handleToggleMute}
         onOpenHelp={() => setIsHelpModalOpen(true)}
@@ -575,6 +601,10 @@ export const App: React.FC = () => {
 
         {activeTab === 'RECORDS' && (
           <PatientRecords patient={activePatient} />
+        )}
+
+        {activeTab === 'PACS_MIRROR' && (
+          <PacsPassthroughView cursor={cursor} />
         )}
       </main>
 

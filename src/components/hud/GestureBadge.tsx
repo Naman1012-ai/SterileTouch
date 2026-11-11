@@ -8,15 +8,17 @@ import {
   MousePointer2,
   Move,
   Ruler,
+  Sparkles,
   ThumbsUp,
 } from 'lucide-react';
-import { GestureDetectionResult } from '../../types/gestures';
+import { GestureDetectionResult, VirtualCursorState } from '../../types/gestures';
 
 interface GestureBadgeProps {
   detection: GestureDetectionResult;
+  cursor?: VirtualCursorState;
 }
 
-export const GestureBadge: React.FC<GestureBadgeProps> = ({ detection }) => {
+export const GestureBadge: React.FC<GestureBadgeProps> = ({ detection, cursor }) => {
   const { gesture, confidence, isFist, isThumbsUp, handPresent } = detection;
 
   if (!handPresent) {
@@ -29,9 +31,28 @@ export const GestureBadge: React.FC<GestureBadgeProps> = ({ detection }) => {
   }
 
   const getGestureConfig = () => {
-    if (isFist) {
+    // Midas Touch Clutch Telemetry
+    if (cursor?.clutchState === 'STANDBY' && !isFist) {
       return {
-        label: 'STERILE FREEZE (INPUT LOCKED)',
+        label: 'STANDBY • PINCH TO ENGAGE',
+        icon: <Hand className="w-3.5 h-3.5 text-amber-400 animate-pulse" />,
+        bgColor: 'bg-amber-950/60 border-amber-500/50 text-amber-200',
+        ringColor: 'ring-amber-500/30',
+      };
+    }
+
+    if (cursor?.clutchState === 'ENGAGING' && !isFist) {
+      return {
+        label: `ENGAGING... ${Math.round((cursor.clutchProgress || 0) * 100)}%`,
+        icon: <Sparkles className="w-3.5 h-3.5 text-cyan-300 animate-spin" />,
+        bgColor: 'bg-cyan-950/80 border-cyan-400/80 text-cyan-100',
+        ringColor: 'ring-cyan-400/50',
+      };
+    }
+
+    if (isFist || cursor?.clutchState === 'CLUTCHED') {
+      return {
+        label: 'STERILE FREEZE (CLUTCH LOCKED)',
         icon: <Lock className="w-3.5 h-3.5 text-rose-400" />,
         bgColor: 'bg-rose-950/80 border-rose-500/70 text-rose-200',
         ringColor: 'ring-rose-500/30',

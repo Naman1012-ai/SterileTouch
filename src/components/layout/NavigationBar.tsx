@@ -1,8 +1,8 @@
 import React from 'react';
-import { Activity, ClipboardCheck, FileText, Scan, User, UserCheck } from 'lucide-react';
+import { Activity, ClipboardCheck, FileText, Scan, Tv, User, UserCheck } from 'lucide-react';
 import { PatientProfile } from '../../types/medical';
 
-export type ActiveTab = 'RADIOLOGY' | 'CHECKLIST' | 'VITALS' | 'RECORDS';
+export type ActiveTab = 'RADIOLOGY' | 'CHECKLIST' | 'VITALS' | 'RECORDS' | 'PACS_MIRROR';
 
 interface NavigationBarProps {
   activeTab: ActiveTab;
@@ -45,6 +45,12 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
       label: 'Patient Chart & Labs',
       icon: <FileText className="w-4 h-4" />,
       badge: 'EHR',
+    },
+    {
+      id: 'PACS_MIRROR' as ActiveTab,
+      label: 'Zero-Integration PACS Mirror',
+      icon: <Tv className="w-4 h-4 text-cyan-400" />,
+      badge: 'Universal PACS',
     },
   ];
 

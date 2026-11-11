@@ -1,5 +1,6 @@
 import { FilesetResolver, HandLandmarker } from '@mediapipe/tasks-vision';
 import { Point3D, TrackingMetrics } from '../types/gestures';
+import { videoPreProcessor } from './videoPreProcessor';
 
 export type LandmarksCallback = (
   landmarks: Point3D[] | null,
@@ -128,8 +129,10 @@ class HandTrackingService {
       const startTime = performance.now();
 
       try {
-        const result = this.handLandmarker.detectForVideo(this.videoElement, startTime);
+        const processedSource = videoPreProcessor.processFrame(this.videoElement);
+        const result = this.handLandmarker.detectForVideo(processedSource as HTMLVideoElement, startTime);
         const latencyMs = Math.round(performance.now() - startTime);
+        const assessment = videoPreProcessor.getLightingAssessment();
 
         if (result.landmarks && result.landmarks.length > 0) {
           const rawLandmarks = result.landmarks[0] as Point3D[];
@@ -149,7 +152,7 @@ class HandTrackingService {
             fps: this.currentFps || 30,
             latencyMs,
             handDetected: true,
-            lightQuality: 'OPTIMAL',
+            lightQuality: assessment.luxCategory === 'OPTIMAL_SURGICAL' ? 'OPTIMAL' : 'FAIR',
             distanceQuality,
           };
 

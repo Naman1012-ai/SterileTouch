@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Camera, CameraOff, ChevronDown, ChevronUp, Eye, EyeOff, Info, RefreshCw, Zap } from 'lucide-react';
+import { Camera, CameraOff, ChevronDown, ChevronUp, Eye, EyeOff, Info, RefreshCw, Shield, Sparkles, Sun, Zap } from 'lucide-react';
 import { Point3D, TrackingMetrics } from '../../types/gestures';
+import { GloveType, videoPreProcessor } from '../../services/videoPreProcessor';
 
 // MediaPipe Hand landmark connections (pairs of landmark indices)
 const HAND_CONNECTIONS = [
@@ -42,6 +43,19 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [showSkeleton, setShowSkeleton] = useState(true);
+  const [gloveMode, setGloveMode] = useState<GloveType>(() => videoPreProcessor.getGloveMode());
+  const [antiGlare, setAntiGlare] = useState<boolean>(() => videoPreProcessor.isAntiGlareEnabled());
+
+  const handleGloveChange = (mode: GloveType) => {
+    setGloveMode(mode);
+    videoPreProcessor.setGloveMode(mode);
+  };
+
+  const handleAntiGlareToggle = () => {
+    const next = !antiGlare;
+    setAntiGlare(next);
+    videoPreProcessor.setAntiGlareEnabled(next);
+  };
 
   // Draw hand landmarks on canvas overlay
   useEffect(() => {
@@ -212,6 +226,69 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
                   </span>
                 </div>
               )}
+            </div>
+
+            {/* OT Lighting & Glove Preset Row */}
+            <div className="flex items-center justify-between px-1 py-1 rounded-lg bg-slate-950/70 border border-slate-800 text-[10px]">
+              <div className="flex items-center gap-1">
+                <Sun className={`w-3 h-3 ${antiGlare ? 'text-amber-400' : 'text-slate-500'}`} />
+                <button
+                  onClick={handleAntiGlareToggle}
+                  data-touchless-clickable="true"
+                  title="Overhead Surgical Lamp Anti-Glare Specular Clamping"
+                  className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-semibold transition ${
+                    antiGlare
+                      ? 'bg-amber-950/80 text-amber-300 border border-amber-600/50'
+                      : 'text-slate-500 hover:text-slate-300'
+                  }`}
+                >
+                  {antiGlare ? 'Anti-Glare ON' : 'Glare OFF'}
+                </button>
+              </div>
+
+              {/* Glove Color Mode Pill Switcher */}
+              <div className="flex items-center gap-0.5">
+                <button
+                  onClick={() => handleGloveChange('BLUE_NITRILE')}
+                  data-touchless-clickable="true"
+                  title="Cobalt Blue Nitrile Gloves"
+                  className={`w-4 h-4 rounded-full border transition ${
+                    gloveMode === 'BLUE_NITRILE'
+                      ? 'bg-cyan-500 border-white shadow-[0_0_8px_rgba(6,182,212,0.8)] scale-110'
+                      : 'bg-cyan-800/60 border-cyan-700/60 hover:scale-105'
+                  }`}
+                />
+                <button
+                  onClick={() => handleGloveChange('GREEN_LATEX')}
+                  data-touchless-clickable="true"
+                  title="Surgical Green Latex Gloves"
+                  className={`w-4 h-4 rounded-full border transition ${
+                    gloveMode === 'GREEN_LATEX'
+                      ? 'bg-emerald-500 border-white shadow-[0_0_8px_rgba(16,185,129,0.8)] scale-110'
+                      : 'bg-emerald-800/60 border-emerald-700/60 hover:scale-105'
+                  }`}
+                />
+                <button
+                  onClick={() => handleGloveChange('WHITE_LATEX')}
+                  data-touchless-clickable="true"
+                  title="Stark White Powder-Free Gloves"
+                  className={`w-4 h-4 rounded-full border transition ${
+                    gloveMode === 'WHITE_LATEX'
+                      ? 'bg-slate-200 border-white shadow-[0_0_8px_rgba(255,255,255,0.8)] scale-110'
+                      : 'bg-slate-600/60 border-slate-500/60 hover:scale-105'
+                  }`}
+                />
+                <button
+                  onClick={() => handleGloveChange('BARE_SKIN')}
+                  data-touchless-clickable="true"
+                  title="Bare Hand (Trauma Bay / Office)"
+                  className={`w-4 h-4 rounded-full border transition ${
+                    gloveMode === 'BARE_SKIN'
+                      ? 'bg-amber-300 border-white shadow-[0_0_8px_rgba(251,191,36,0.8)] scale-110'
+                      : 'bg-amber-700/60 border-amber-600/60 hover:scale-105'
+                  }`}
+                />
+              </div>
             </div>
 
             {/* Quick Action Buttons */}

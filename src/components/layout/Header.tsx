@@ -11,7 +11,7 @@ import {
   VolumeX,
 } from 'lucide-react';
 import { PatientProfile } from '../../types/medical';
-import { GestureDetectionResult } from '../../types/gestures';
+import { GestureDetectionResult, VirtualCursorState } from '../../types/gestures';
 import { audioService } from '../../services/audioFeedback';
 import { VoiceIndicatorHUD } from '../hud/VoiceIndicatorHUD';
 import { GestureBadge } from '../hud/GestureBadge';
@@ -20,6 +20,7 @@ import { SterileTouchLogo } from '../brand/SterileTouchLogo';
 interface HeaderProps {
   patient: PatientProfile;
   gestureResult: GestureDetectionResult;
+  cursor?: VirtualCursorState;
   isMuted: boolean;
   onToggleMute: () => void;
   onOpenHelp: () => void;
@@ -29,6 +30,7 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({
   patient,
   gestureResult,
+  cursor,
   isMuted,
   onToggleMute,
   onOpenHelp,
@@ -80,7 +82,7 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Center Section: Integrated Touchless Gesture Telemetry Capsule */}
       <div className="flex items-center justify-center pointer-events-none">
-        <GestureBadge detection={gestureResult} />
+        <GestureBadge detection={gestureResult} cursor={cursor} />
       </div>
 
       {/* Right Section: Clinical Utilities & System Controls */}
