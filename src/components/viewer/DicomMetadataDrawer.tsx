@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { DicomMetadata } from '../../types/dicom';
 import { audioService } from '../../services/audioFeedback';
+import { SterileTouchLogo } from '../brand/SterileTouchLogo';
 
 interface DicomMetadataDrawerProps {
   isOpen: boolean;
@@ -43,9 +44,7 @@ export const DicomMetadataDrawer: React.FC<DicomMetadataDrawerProps> = ({
       {/* Header */}
       <div className="px-5 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/70">
         <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
-            <FileText className="w-4 h-4" />
-          </div>
+          <SterileTouchLogo variant="icon" size="sm" />
           <div>
             <h3 className="font-bold text-white text-sm tracking-tight flex items-center gap-2">
               <span>PACS Header Inspector</span>
