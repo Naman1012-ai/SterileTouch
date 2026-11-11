@@ -13,6 +13,7 @@ import { GesturesHelpModal } from './components/hud/GesturesHelpModal';
 import { DicomDropzoneModal } from './components/viewer/DicomDropzoneModal';
 import { DicomMetadataDrawer } from './components/viewer/DicomMetadataDrawer';
 import { DoctorOnboardingTutorial } from './components/onboarding/DoctorOnboardingTutorial';
+import { WorkstationProvider } from './context/WorkstationContext';
 
 import { MOCK_PATIENTS } from './data/mockPatients';
 import { MOCK_SCANS } from './data/mockScans';
@@ -538,128 +539,130 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-slate-950 text-slate-100 font-sans relative">
-      {/* Operating Room Header with Integrated Telemetry */}
-      <Header
-        patient={activePatient}
-        gestureResult={gestureResult}
-        cursor={cursor}
-        isMuted={isMuted}
-        onToggleMute={handleToggleMute}
-        onOpenHelp={() => setIsHelpModalOpen(true)}
-        onOpenTutorial={() => setIsOnboardingOpen(true)}
-      />
+    <WorkstationProvider>
+      <div className="flex flex-col h-screen w-screen overflow-hidden bg-slate-950 text-slate-100 font-sans relative">
+        {/* Operating Room Header with Integrated Telemetry */}
+        <Header
+          patient={activePatient}
+          gestureResult={gestureResult}
+          cursor={cursor}
+          isMuted={isMuted}
+          onToggleMute={handleToggleMute}
+          onOpenHelp={() => setIsHelpModalOpen(true)}
+          onOpenTutorial={() => setIsOnboardingOpen(true)}
+        />
 
-      {/* Navigation Bar & Case Switcher */}
-      <NavigationBar
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        patients={allPatients}
-        currentPatientId={currentPatientId}
-        onPatientChange={setCurrentPatientId}
-      />
+        {/* Navigation Bar & Case Switcher */}
+        <NavigationBar
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          patients={allPatients}
+          currentPatientId={currentPatientId}
+          onPatientChange={setCurrentPatientId}
+        />
 
-      {/* Main Workspace Display Port */}
-      <main className="flex-1 relative overflow-hidden flex flex-col">
-        {activeTab === 'RADIOLOGY' && (
-          <MedicalViewer
-            scan={activeScan}
-            cursor={cursor}
-            landmarks={landmarks}
-            voiceCommand={lastVoiceCommand}
-            onOpenUploadModal={() => setIsUploadModalOpen(true)}
-            onToggleMetadataDrawer={() => setIsMetadataDrawerOpen((prev) => !prev)}
-            isMetadataDrawerOpen={isMetadataDrawerOpen}
-          />
-        )}
+        {/* Main Workspace Display Port */}
+        <main className="flex-1 relative overflow-hidden flex flex-col">
+          {activeTab === 'RADIOLOGY' && (
+            <MedicalViewer
+              scan={activeScan}
+              cursor={cursor}
+              landmarks={landmarks}
+              voiceCommand={lastVoiceCommand}
+              onOpenUploadModal={() => setIsUploadModalOpen(true)}
+              onToggleMetadataDrawer={() => setIsMetadataDrawerOpen((prev) => !prev)}
+              isMetadataDrawerOpen={isMetadataDrawerOpen}
+            />
+          )}
 
-        {activeTab === 'CHECKLIST' && (
-          <SurgicalChecklist
-            gestureResult={gestureResult}
-            voiceCommand={lastVoiceCommand}
-            onAuditLogAdded={handleAddAuditLog}
-            onOpenAuditModal={() => setIsAuditModalOpen(true)}
-          />
-        )}
+          {activeTab === 'CHECKLIST' && (
+            <SurgicalChecklist
+              gestureResult={gestureResult}
+              voiceCommand={lastVoiceCommand}
+              onAuditLogAdded={handleAddAuditLog}
+              onOpenAuditModal={() => setIsAuditModalOpen(true)}
+            />
+          )}
 
-        {activeTab === 'VITALS' && (
-          <VitalsMonitor
-            voiceCommand={lastVoiceCommand}
-            onAcknowledgeAlarm={() => {
-              handleAddAuditLog({
-                id: `log-alm-${Date.now()}`,
-                timestamp: `${new Date().toLocaleTimeString('en-US', { hour12: false })} UTC`,
-                category: 'SYSTEM',
-                action: 'Critical Alarm Silenced & Reset',
-                details: 'Hemodynamic stability acknowledged touchlessly by surgical team.',
-                operator: 'Dr. Aris Thorne (Lead Surgeon)',
-                verifiedTouchless: true,
-              });
-            }}
-          />
-        )}
+          {activeTab === 'VITALS' && (
+            <VitalsMonitor
+              voiceCommand={lastVoiceCommand}
+              onAcknowledgeAlarm={() => {
+                handleAddAuditLog({
+                  id: `log-alm-${Date.now()}`,
+                  timestamp: `${new Date().toLocaleTimeString('en-US', { hour12: false })} UTC`,
+                  category: 'SYSTEM',
+                  action: 'Critical Alarm Silenced & Reset',
+                  details: 'Hemodynamic stability acknowledged touchlessly by surgical team.',
+                  operator: 'Dr. Aris Thorne (Lead Surgeon)',
+                  verifiedTouchless: true,
+                });
+              }}
+            />
+          )}
 
-        {activeTab === 'RECORDS' && (
-          <PatientRecords patient={activePatient} />
-        )}
+          {activeTab === 'RECORDS' && (
+            <PatientRecords patient={activePatient} />
+          )}
 
-        {activeTab === 'PACS_MIRROR' && (
-          <PacsPassthroughView cursor={cursor} />
-        )}
-      </main>
+          {activeTab === 'PACS_MIRROR' && (
+            <PacsPassthroughView cursor={cursor} />
+          )}
+        </main>
 
-      {/* Picture-In-Picture Surgeon HUD Camera Feed (Bottom-Right) */}
-      <CameraFeed
-        videoRef={videoRef}
-        landmarks={landmarks}
-        metrics={metrics}
-        isSimulated={isSimulated}
-        onToggleSimulated={handleToggleSimulated}
-        isCameraActive={isCameraActive}
-        onToggleCamera={handleToggleCamera}
-        cameraError={cameraError}
-      />
+        {/* Picture-In-Picture Surgeon HUD Camera Feed (Bottom-Right) */}
+        <CameraFeed
+          videoRef={videoRef}
+          landmarks={landmarks}
+          metrics={metrics}
+          isSimulated={isSimulated}
+          onToggleSimulated={handleToggleSimulated}
+          isCameraActive={isCameraActive}
+          onToggleCamera={handleToggleCamera}
+          cameraError={cameraError}
+        />
 
-      {/* Virtual Sterile Pointer & Dwell Ring Overlay */}
-      <VirtualCursor cursor={cursor} />
+        {/* Virtual Sterile Pointer & Dwell Ring Overlay */}
+        <VirtualCursor cursor={cursor} />
 
-      {/* Modals & Drawers */}
-      <AuditLogModal
-        isOpen={isAuditModalOpen}
-        onClose={() => setIsAuditModalOpen(false)}
-        logs={auditLogs}
-      />
+        {/* Modals & Drawers */}
+        <AuditLogModal
+          isOpen={isAuditModalOpen}
+          onClose={() => setIsAuditModalOpen(false)}
+          logs={auditLogs}
+        />
 
-      <GesturesHelpModal
-        isOpen={isHelpModalOpen}
-        onClose={() => setIsHelpModalOpen(false)}
-      />
+        <GesturesHelpModal
+          isOpen={isHelpModalOpen}
+          onClose={() => setIsHelpModalOpen(false)}
+        />
 
-      <DicomDropzoneModal
-        isOpen={isUploadModalOpen}
-        onClose={() => setIsUploadModalOpen(false)}
-        onUploadSuccess={handleUploadSuccess}
-      />
+        <DicomDropzoneModal
+          isOpen={isUploadModalOpen}
+          onClose={() => setIsUploadModalOpen(false)}
+          onUploadSuccess={handleUploadSuccess}
+        />
 
-      <DicomMetadataDrawer
-        isOpen={isMetadataDrawerOpen}
-        onClose={() => setIsMetadataDrawerOpen(false)}
-        metadata={activeScan.dicomMetadata}
-      />
+        <DicomMetadataDrawer
+          isOpen={isMetadataDrawerOpen}
+          onClose={() => setIsMetadataDrawerOpen(false)}
+          metadata={activeScan.dicomMetadata}
+        />
 
-      {/* Doctor Onboarding & Interactive Calibration Tutorial */}
-      <DoctorOnboardingTutorial
-        isOpen={isOnboardingOpen}
-        onClose={() => setIsOnboardingOpen(false)}
-        gestureResult={gestureResult}
-        cursor={cursor}
-        landmarks={landmarks}
-        metrics={metrics}
-        isCameraActive={isCameraActive}
-        onStartCamera={startCamera}
-        voiceCommand={lastVoiceCommand}
-      />
-    </div>
+        {/* Doctor Onboarding & Interactive Calibration Tutorial */}
+        <DoctorOnboardingTutorial
+          isOpen={isOnboardingOpen}
+          onClose={() => setIsOnboardingOpen(false)}
+          gestureResult={gestureResult}
+          cursor={cursor}
+          landmarks={landmarks}
+          metrics={metrics}
+          isCameraActive={isCameraActive}
+          onStartCamera={startCamera}
+          voiceCommand={lastVoiceCommand}
+        />
+      </div>
+    </WorkstationProvider>
   );
 };
 

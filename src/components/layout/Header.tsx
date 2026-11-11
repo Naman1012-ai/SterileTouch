@@ -16,6 +16,7 @@ import { audioService } from '../../services/audioFeedback';
 import { VoiceIndicatorHUD } from '../hud/VoiceIndicatorHUD';
 import { GestureBadge } from '../hud/GestureBadge';
 import { SterileTouchLogo } from '../brand/SterileTouchLogo';
+import { useWorkstation } from '../../context/WorkstationContext';
 
 interface HeaderProps {
   patient: PatientProfile;
@@ -36,6 +37,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenHelp,
   onOpenTutorial,
 }) => {
+  const { mode, setMode } = useWorkstation();
   const [time, setTime] = useState<string>('');
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
 
@@ -96,6 +98,34 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="font-mono text-xs text-slate-300 bg-slate-900 border border-slate-800 px-2.5 py-1 rounded-lg hidden lg:flex items-center gap-1.5">
           <Activity className="w-3.5 h-3.5 text-cyan-400" />
           <span>{time}</span>
+        </div>
+
+        {/* Simple vs. Advanced Workstation Mode Switch */}
+        <div className="hidden xl:flex items-center p-0.5 rounded-lg bg-slate-900 border border-slate-800 text-[10px] font-mono">
+          <button
+            onClick={() => setMode('SIMPLE')}
+            data-touchless-clickable="true"
+            title="Simple Mode: Sterile Field Focused, Large Targets"
+            className={`px-2 py-0.5 rounded font-semibold transition ${
+              mode === 'SIMPLE'
+                ? 'bg-cyan-500 text-slate-950 shadow-[0_0_8px_rgba(6,182,212,0.4)]'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            Simple
+          </button>
+          <button
+            onClick={() => setMode('ADVANCED')}
+            data-touchless-clickable="true"
+            title="Advanced Mode: Diagnostic Station with Full Telemetry"
+            className={`px-2 py-0.5 rounded font-semibold transition ${
+              mode === 'ADVANCED'
+                ? 'bg-cyan-500 text-slate-950 shadow-[0_0_8px_rgba(6,182,212,0.4)]'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            Advanced
+          </button>
         </div>
 
         {/* Audio Toggle */}

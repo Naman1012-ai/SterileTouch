@@ -87,3 +87,20 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #334155;
 }
+
+/* Phase 1: High-Contrast Focus Ring for Keyboard / Dwell Accessibility */
+:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px #020617, 0 0 0 4px #06b6d4;
+}
+
+/* Responsive Large Workstation Utility Classes (1920px+ OR screens) */
+@media (min-width: 1920px) {
+  .workstation-scale-lg {
+    font-size: 1.125rem;
+  }
+  .workstation-target-lg {
+    min-height: 56px;
+    min-width: 56px;
+  }
+}
