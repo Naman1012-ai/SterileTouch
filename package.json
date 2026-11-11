@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "test": "npx tsx tests/gestureClassifier.test.ts && npx tsx tests/voiceAssistant.test.ts && npx tsx tests/dicomParser.test.ts && npx tsx tests/handOrientation.test.ts && npx tsx tests/onboarding.test.ts && npx tsx tests/clutchEngine.test.ts && npx tsx tests/videoPreProcessor.test.ts && npx tsx tests/workstationContext.test.ts",
+    "test": "npx tsx tests/gestureClassifier.test.ts && npx tsx tests/voiceAssistant.test.ts && npx tsx tests/dicomParser.test.ts && npx tsx tests/handOrientation.test.ts && npx tsx tests/onboarding.test.ts && npx tsx tests/clutchEngine.test.ts && npx tsx tests/videoPreProcessor.test.ts && npx tsx tests/workstationContext.test.ts && npx tsx tests/shellNavigation.test.ts",
     "preview": "vite preview"
   },
   "dependencies": {

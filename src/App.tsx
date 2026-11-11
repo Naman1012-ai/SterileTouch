@@ -1,6 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Header } from './components/layout/Header';
-import { ActiveTab, NavigationBar } from './components/layout/NavigationBar';
+import {
+  ActiveTab,
+  Header,
+  NavigationBar,
+  PatientContextBar,
+  SystemStatusBar,
+  WorkstationShell,
+} from './components/layout';
 import { MedicalViewer } from './components/viewer/MedicalViewer';
 import { SurgicalChecklist } from './components/checklist/SurgicalChecklist';
 import { VitalsMonitor } from './components/vitals/VitalsMonitor';
@@ -540,75 +546,91 @@ export const App: React.FC = () => {
 
   return (
     <WorkstationProvider>
-      <div className="flex flex-col h-screen w-screen overflow-hidden bg-slate-950 text-slate-100 font-sans relative">
-        {/* Operating Room Header with Integrated Telemetry */}
-        <Header
-          patient={activePatient}
-          gestureResult={gestureResult}
-          cursor={cursor}
-          isMuted={isMuted}
-          onToggleMute={handleToggleMute}
-          onOpenHelp={() => setIsHelpModalOpen(true)}
-          onOpenTutorial={() => setIsOnboardingOpen(true)}
-        />
+      <WorkstationShell
+        header={
+          <Header
+            patient={activePatient}
+            gestureResult={gestureResult}
+            cursor={cursor}
+            isMuted={isMuted}
+            onToggleMute={handleToggleMute}
+            onOpenHelp={() => setIsHelpModalOpen(true)}
+            onOpenTutorial={() => setIsOnboardingOpen(true)}
+          />
+        }
+        navigation={
+          <NavigationBar
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            patients={allPatients}
+            currentPatientId={currentPatientId}
+            onPatientChange={setCurrentPatientId}
+          />
+        }
+        patientContext={
+          <PatientContextBar
+            patient={activePatient}
+            activeScan={activeScan}
+          />
+        }
+        statusBar={
+          <SystemStatusBar
+            isCameraActive={isCameraActive}
+            isSimulated={isSimulated}
+            cameraError={cameraError}
+            metrics={metrics}
+            cursor={cursor}
+            isMuted={isMuted}
+            onToggleCamera={handleToggleCamera}
+          />
+        }
+      >
+        {activeTab === 'RADIOLOGY' && (
+          <MedicalViewer
+            scan={activeScan}
+            cursor={cursor}
+            landmarks={landmarks}
+            voiceCommand={lastVoiceCommand}
+            onOpenUploadModal={() => setIsUploadModalOpen(true)}
+            onToggleMetadataDrawer={() => setIsMetadataDrawerOpen((prev) => !prev)}
+            isMetadataDrawerOpen={isMetadataDrawerOpen}
+          />
+        )}
 
-        {/* Navigation Bar & Case Switcher */}
-        <NavigationBar
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          patients={allPatients}
-          currentPatientId={currentPatientId}
-          onPatientChange={setCurrentPatientId}
-        />
+        {activeTab === 'CHECKLIST' && (
+          <SurgicalChecklist
+            gestureResult={gestureResult}
+            voiceCommand={lastVoiceCommand}
+            onAuditLogAdded={handleAddAuditLog}
+            onOpenAuditModal={() => setIsAuditModalOpen(true)}
+          />
+        )}
 
-        {/* Main Workspace Display Port */}
-        <main className="flex-1 relative overflow-hidden flex flex-col">
-          {activeTab === 'RADIOLOGY' && (
-            <MedicalViewer
-              scan={activeScan}
-              cursor={cursor}
-              landmarks={landmarks}
-              voiceCommand={lastVoiceCommand}
-              onOpenUploadModal={() => setIsUploadModalOpen(true)}
-              onToggleMetadataDrawer={() => setIsMetadataDrawerOpen((prev) => !prev)}
-              isMetadataDrawerOpen={isMetadataDrawerOpen}
-            />
-          )}
+        {activeTab === 'VITALS' && (
+          <VitalsMonitor
+            voiceCommand={lastVoiceCommand}
+            onAcknowledgeAlarm={() => {
+              handleAddAuditLog({
+                id: `log-alm-${Date.now()}`,
+                timestamp: `${new Date().toLocaleTimeString('en-US', { hour12: false })} UTC`,
+                category: 'SYSTEM',
+                action: 'Critical Alarm Silenced & Reset',
+                details: 'Hemodynamic stability acknowledged touchlessly by surgical team.',
+                operator: 'Dr. Aris Thorne (Lead Surgeon)',
+                verifiedTouchless: true,
+              });
+            }}
+          />
+        )}
 
-          {activeTab === 'CHECKLIST' && (
-            <SurgicalChecklist
-              gestureResult={gestureResult}
-              voiceCommand={lastVoiceCommand}
-              onAuditLogAdded={handleAddAuditLog}
-              onOpenAuditModal={() => setIsAuditModalOpen(true)}
-            />
-          )}
+        {activeTab === 'RECORDS' && (
+          <PatientRecords patient={activePatient} />
+        )}
 
-          {activeTab === 'VITALS' && (
-            <VitalsMonitor
-              voiceCommand={lastVoiceCommand}
-              onAcknowledgeAlarm={() => {
-                handleAddAuditLog({
-                  id: `log-alm-${Date.now()}`,
-                  timestamp: `${new Date().toLocaleTimeString('en-US', { hour12: false })} UTC`,
-                  category: 'SYSTEM',
-                  action: 'Critical Alarm Silenced & Reset',
-                  details: 'Hemodynamic stability acknowledged touchlessly by surgical team.',
-                  operator: 'Dr. Aris Thorne (Lead Surgeon)',
-                  verifiedTouchless: true,
-                });
-              }}
-            />
-          )}
-
-          {activeTab === 'RECORDS' && (
-            <PatientRecords patient={activePatient} />
-          )}
-
-          {activeTab === 'PACS_MIRROR' && (
-            <PacsPassthroughView cursor={cursor} />
-          )}
-        </main>
+        {activeTab === 'PACS_MIRROR' && (
+          <PacsPassthroughView cursor={cursor} />
+        )}
+      </WorkstationShell>
 
         {/* Picture-In-Picture Surgeon HUD Camera Feed (Bottom-Right) */}
         <CameraFeed
@@ -661,7 +683,6 @@ export const App: React.FC = () => {
           onStartCamera={startCamera}
           voiceCommand={lastVoiceCommand}
         />
-      </div>
     </WorkstationProvider>
   );
 };
