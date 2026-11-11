@@ -116,30 +116,43 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
       )}
 
       {/* Main HUD Window */}
-      <div className="bg-slate-900/95 border border-slate-700/80 rounded-xl shadow-2xl overflow-hidden backdrop-blur-md w-64 transition-all">
+      <div
+        className={`bg-slate-900/95 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden backdrop-blur-xl transition-all duration-200 ${
+          isCollapsed ? 'w-auto' : 'w-64'
+        }`}
+      >
         {/* Header Bar */}
-        <div className="bg-slate-800/80 px-3 py-2 flex items-center justify-between border-b border-slate-700/60 text-xs text-slate-300">
+        <div className="bg-slate-800/90 px-3.5 py-2 flex items-center justify-between border-b border-slate-700/60 text-xs text-slate-300 gap-3">
           <div className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${metrics.handDetected ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`} />
+            <div
+              className={`w-2.5 h-2.5 rounded-full ${
+                metrics.handDetected ? 'bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]' : 'bg-slate-500'
+              }`}
+            />
             <span className="font-semibold tracking-wide text-slate-200">Surgeon HUD</span>
-            <span className="text-[10px] font-mono text-cyan-400 bg-cyan-950/60 px-1.5 py-0.5 rounded border border-cyan-800/50">
+            <span className="text-[10px] font-mono text-cyan-300 bg-cyan-950/70 px-1.5 py-0.5 rounded border border-cyan-800/60 font-bold">
               {metrics.fps} FPS
             </span>
           </div>
 
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setShowSkeleton(!showSkeleton)}
-              title={showSkeleton ? 'Hide Skeleton' : 'Show Skeleton'}
-              className="p-1 text-slate-400 hover:text-cyan-400 transition"
-            >
-              {showSkeleton ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-            </button>
+          <div className="flex items-center gap-1.5">
+            {!isCollapsed && (
+              <button
+                onClick={() => setShowSkeleton(!showSkeleton)}
+                title={showSkeleton ? 'Hide Skeleton' : 'Show Skeleton'}
+                data-touchless-clickable="true"
+                className="p-1 text-slate-400 hover:text-cyan-400 transition"
+              >
+                {showSkeleton ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+              </button>
+            )}
             <button
               onClick={() => setIsCollapsed(!isCollapsed)}
-              className="p-1 text-slate-400 hover:text-slate-200 transition"
+              data-touchless-clickable="true"
+              title={isCollapsed ? 'Expand HUD' : 'Collapse HUD'}
+              className="p-1 text-slate-400 hover:text-slate-100 transition rounded hover:bg-slate-700/50"
             >
-              {isCollapsed ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              {isCollapsed ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </button>
           </div>
         </div>

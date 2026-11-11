@@ -480,20 +480,34 @@ export const MedicalViewer: React.FC<MedicalViewerProps> = ({
 
   return (
     <div className="flex-1 flex flex-col h-full bg-slate-950 overflow-hidden select-none">
-      {/* Top Clinical Toolbar */}
-      <div className="h-11 bg-slate-900/90 border-b border-slate-800 px-4 flex items-center justify-between gap-2 text-xs">
-        {/* Modality & Scan Title */}
-        <div className="flex items-center gap-2">
-          <span className="font-mono font-bold bg-cyan-950 text-cyan-300 border border-cyan-800/80 px-2 py-0.5 rounded text-[11px]">
-            {scan.modality}
-          </span>
-          <span className="font-semibold text-slate-200 hidden sm:inline">
-            {scan.title}
-          </span>
+      {/* Tier 1: Scan Context & Primary View Switcher Bar */}
+      <div className="h-12 bg-slate-950 border-b border-slate-800/90 px-4 flex items-center justify-between gap-3 text-xs select-none">
+        {/* Left: Modality Badge & Scan Dataset Telemetry */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <span className="font-mono font-bold bg-cyan-950 text-cyan-300 border border-cyan-700/80 px-2.5 py-1 rounded-lg text-xs shadow-sm">
+              {scan.modality}
+            </span>
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-white text-sm tracking-tight">
+                  {scan.title}
+                </span>
+                {scan.isCustomUpload && (
+                  <span className="text-[9px] font-mono uppercase bg-emerald-950/80 text-emerald-400 border border-emerald-800/70 px-1.5 py-0.2 rounded font-semibold">
+                    Custom DICOM
+                  </span>
+                )}
+              </div>
+              <span className="text-[10px] font-mono text-slate-400">
+                {scan.anatomicalRegion} • {scan.totalSlices} Slices • {scan.pixelSpacingMm.toFixed(3)}mm spacing
+              </span>
+            </div>
+          </div>
         </div>
 
-        {/* View Mode Switcher: 2D Slices | Split 2D+3D | 3D Volumetric */}
-        <div className="flex items-center gap-1 bg-slate-950/80 p-0.5 rounded-lg border border-slate-800">
+        {/* Right: Primary Viewport Layout Mode Switcher */}
+        <div className="flex items-center gap-1.5 bg-slate-900/90 p-1 rounded-xl border border-slate-800/90 shadow-sm">
           <button
             onClick={() => {
               setViewMode('2D_ONLY');
@@ -501,14 +515,14 @@ export const MedicalViewer: React.FC<MedicalViewerProps> = ({
             }}
             data-touchless-clickable="true"
             title="2D Cross-Sectional Slice Workstation"
-            className={`flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-semibold transition ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
               viewMode === '2D_ONLY'
-                ? 'bg-slate-800 text-cyan-300 border border-cyan-500/50 shadow-sm'
+                ? 'bg-slate-800 text-cyan-300 border border-cyan-500/60 shadow-[0_0_10px_rgba(6,182,212,0.2)]'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            <Square className="w-3 h-3" />
-            <span className="hidden lg:inline">2D Slice</span>
+            <Square className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">2D Slice Workstation</span>
           </button>
 
           <button
@@ -518,14 +532,14 @@ export const MedicalViewer: React.FC<MedicalViewerProps> = ({
             }}
             data-touchless-clickable="true"
             title="Dual Split View (2D Slices + 3D Model)"
-            className={`flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-semibold transition ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
               viewMode === 'SPLIT_SCREEN'
-                ? 'bg-slate-800 text-cyan-300 border border-cyan-500/50 shadow-sm'
+                ? 'bg-slate-800 text-cyan-300 border border-cyan-500/60 shadow-[0_0_10px_rgba(6,182,212,0.2)]'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            <Columns2 className="w-3 h-3 text-cyan-400" />
-            <span className="hidden lg:inline">Split 2D/3D</span>
+            <Columns2 className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="hidden sm:inline">Split 2D / 3D</span>
           </button>
 
           <button
@@ -535,149 +549,160 @@ export const MedicalViewer: React.FC<MedicalViewerProps> = ({
             }}
             data-touchless-clickable="true"
             title="Full 3D Volumetric Mesh View"
-            className={`flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-semibold transition ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
               viewMode === '3D_ONLY'
-                ? 'bg-indigo-950 text-indigo-300 border border-indigo-500/50 shadow-sm'
+                ? 'bg-indigo-950 text-indigo-300 border border-indigo-500/60 shadow-[0_0_10px_rgba(99,102,241,0.25)]'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            <Box className="w-3 h-3 text-indigo-400" />
-            <span className="hidden lg:inline">3D Mesh</span>
+            <Box className="w-3.5 h-3.5 text-indigo-400" />
+            <span className="hidden sm:inline">3D Volumetric Mesh</span>
           </button>
         </div>
+      </div>
 
-        {/* Window Presets Buttons */}
-        <div className="flex items-center gap-1 bg-slate-950/80 p-0.5 rounded-lg border border-slate-800">
-          <div className="flex items-center gap-1 px-1.5 text-slate-400 text-[10px] font-mono">
-            <Sliders className="w-3 h-3 text-cyan-400" />
-            <span className="hidden md:inline">W/L:</span>
+      {/* Tier 2: Diagnostic Action Ribbon (Structured Tool Clusters) */}
+      <div className="min-h-10 bg-slate-900/90 border-b border-slate-800/80 px-4 py-1.5 flex flex-wrap items-center justify-between gap-3 text-xs">
+        {/* Left Clusters: W/L Presets & Measurements */}
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Cluster 1: Window / Level Presets */}
+          <div className="flex items-center gap-1 bg-slate-950/80 p-0.5 rounded-xl border border-slate-800/90">
+            <div className="flex items-center gap-1 px-2 text-slate-400 text-[10px] font-mono">
+              <Sliders className="w-3.5 h-3.5 text-cyan-400" />
+              <span className="hidden sm:inline font-semibold">W/L:</span>
+            </div>
+            {WINDOW_PRESETS.map((preset) => (
+              <button
+                key={preset.id}
+                onClick={() => {
+                  setActivePreset(preset.id);
+                  audioService.playClick();
+                }}
+                data-touchless-clickable="true"
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition ${
+                  activePreset === preset.id
+                    ? 'bg-slate-800 text-cyan-300 border border-cyan-500/50 shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                }`}
+              >
+                {preset.label}
+              </button>
+            ))}
           </div>
-          {WINDOW_PRESETS.map((preset) => (
-            <button
-              key={preset.id}
-              onClick={() => {
-                setActivePreset(preset.id);
-                audioService.playClick();
-              }}
-              data-touchless-clickable="true"
-              className={`px-2 py-1 rounded text-[11px] font-medium transition ${
-                activePreset === preset.id
-                  ? 'bg-slate-800 text-cyan-300 border border-cyan-500/40 shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              {preset.label}
-            </button>
-          ))}
-        </div>
 
-        {/* Tools: Caliper, AI Overlays, Zoom Controls */}
-        <div className="flex items-center gap-1.5">
-          {/* Upload DICOM & Metadata Inspector Buttons */}
-          <button
-            onClick={() => {
-              audioService.playClick();
-              onOpenUploadModal?.();
-            }}
-            data-touchless-clickable="true"
-            title="Upload DICOM (.dcm) or Medical Image"
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-cyan-500/50 bg-cyan-950/70 hover:bg-cyan-900/80 text-cyan-300 text-[11px] font-semibold transition shadow-sm"
-          >
-            <Upload className="w-3.5 h-3.5" />
-            <span className="hidden md:inline">Upload Scan</span>
-          </button>
+          <div className="h-5 w-px bg-slate-800 hidden md:block" />
 
-          <button
-            onClick={() => {
-              audioService.playClick();
-              onToggleMetadataDrawer?.();
-            }}
-            data-touchless-clickable="true"
-            title="PACS DICOM Header Inspector"
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[11px] font-semibold transition ${
-              isMetadataDrawerOpen
-                ? 'border-indigo-400 bg-indigo-950 text-indigo-200 shadow-sm'
-                : 'border-slate-800 bg-slate-900 text-slate-300 hover:text-white'
-            }`}
-          >
-            <FileText className="w-3.5 h-3.5 text-indigo-400" />
-            <span className="hidden md:inline">DICOM Tags</span>
-          </button>
-
-          <div className="h-4 w-px bg-slate-800 hidden sm:block" />
-
-          <button
-            onClick={() => {
-              setIsCaliperActive(!isCaliperActive);
-              setCaliperPendingPoint(null);
-              audioService.playClick();
-            }}
-            data-touchless-clickable="true"
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[11px] font-medium transition ${
-              isCaliperActive
-                ? 'bg-indigo-950 text-indigo-300 border-indigo-500/60 shadow-md shadow-indigo-950'
-                : 'bg-slate-900 border-slate-800 text-slate-300 hover:text-white'
-            }`}
-          >
-            <Ruler className="w-3.5 h-3.5 text-indigo-400" />
-            <span className="hidden sm:inline">Caliper</span>
-            {measurements.length > 0 && (
-              <span className="ml-1 bg-indigo-900/80 text-indigo-200 px-1 rounded-full text-[10px]">
-                {measurements.length}
-              </span>
-            )}
-          </button>
-
-          {measurements.length > 0 && (
+          {/* Cluster 2: Diagnostic Measurement & AI Overlays */}
+          <div className="flex items-center gap-1.5">
             <button
               onClick={() => {
-                setMeasurements([]);
+                setIsCaliperActive(!isCaliperActive);
                 setCaliperPendingPoint(null);
                 audioService.playClick();
               }}
               data-touchless-clickable="true"
-              title="Clear Caliper Measurements"
-              className="p-1 rounded-lg border border-slate-800 bg-slate-900 text-slate-400 hover:text-rose-400 transition"
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-xl border text-[11px] font-semibold transition ${
+                isCaliperActive
+                  ? 'bg-indigo-950 text-indigo-300 border-indigo-500/60 shadow-[0_0_10px_rgba(99,102,241,0.2)]'
+                  : 'bg-slate-950/80 border-slate-800 text-slate-300 hover:text-white hover:border-slate-700'
+              }`}
             >
-              <Trash2 className="w-3.5 h-3.5" />
+              <Ruler className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Caliper</span>
+              {measurements.length > 0 && (
+                <span className="ml-1 bg-indigo-900/90 text-indigo-200 px-1.5 py-0.2 rounded-full text-[10px] font-mono">
+                  {measurements.length}
+                </span>
+              )}
             </button>
-          )}
 
-          <button
-            onClick={() => {
-              setShowAiOverlay(!showAiOverlay);
-              audioService.playClick();
-            }}
-            data-touchless-clickable="true"
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[11px] font-medium transition ${
-              showAiOverlay
-                ? 'bg-emerald-950 text-emerald-300 border-emerald-500/60'
-                : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="hidden sm:inline">AI Findings</span>
-          </button>
+            {measurements.length > 0 && (
+              <button
+                onClick={() => {
+                  setMeasurements([]);
+                  setCaliperPendingPoint(null);
+                  audioService.playClick();
+                }}
+                data-touchless-clickable="true"
+                title="Clear Caliper Measurements"
+                className="p-1.5 rounded-xl border border-slate-800 bg-slate-950 text-slate-400 hover:text-rose-400 hover:border-rose-800/60 transition"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            )}
 
-          <div className="h-4 w-px bg-slate-800 hidden sm:block" />
+            <button
+              onClick={() => {
+                setShowAiOverlay(!showAiOverlay);
+                audioService.playClick();
+              }}
+              data-touchless-clickable="true"
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-xl border text-[11px] font-semibold transition ${
+                showAiOverlay
+                  ? 'bg-emerald-950/90 text-emerald-300 border-emerald-500/60 shadow-[0_0_10px_rgba(16,185,129,0.2)]'
+                  : 'bg-slate-950/80 border-slate-800 text-slate-400 hover:text-white'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+              <span>AI Findings</span>
+            </button>
+          </div>
+        </div>
 
-          {/* Zoom In/Out & Reset */}
-          <div className="flex items-center gap-1 bg-slate-950/80 border border-slate-800 p-0.5 rounded-lg">
+        {/* Right Clusters: PACS Data & Viewport Zoom */}
+        <div className="flex items-center gap-2.5">
+          {/* Cluster 3: External Scans & PACS Metadata */}
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => {
+                audioService.playClick();
+                onOpenUploadModal?.();
+              }}
+              data-touchless-clickable="true"
+              title="Upload DICOM (.dcm) or Medical Image"
+              className="flex items-center gap-1.5 px-3 py-1 rounded-xl border border-cyan-500/60 bg-cyan-950/80 hover:bg-cyan-900 text-cyan-200 text-[11px] font-semibold transition shadow-sm"
+            >
+              <Upload className="w-3.5 h-3.5 text-cyan-300" />
+              <span>Upload Scan</span>
+            </button>
+
+            <button
+              onClick={() => {
+                audioService.playClick();
+                onToggleMetadataDrawer?.();
+              }}
+              data-touchless-clickable="true"
+              title="PACS DICOM Header Inspector"
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-xl border text-[11px] font-semibold transition ${
+                isMetadataDrawerOpen
+                  ? 'border-indigo-400 bg-indigo-950 text-indigo-200 shadow-sm'
+                  : 'border-slate-800 bg-slate-950/80 text-slate-300 hover:text-white hover:border-slate-700'
+              }`}
+            >
+              <FileText className="w-3.5 h-3.5 text-indigo-400" />
+              <span className="hidden sm:inline">PACS Tags</span>
+            </button>
+          </div>
+
+          <div className="h-5 w-px bg-slate-800 hidden sm:block" />
+
+          {/* Cluster 4: Viewport Zoom & Reset Controls */}
+          <div className="flex items-center gap-1 bg-slate-950/90 border border-slate-800 p-0.5 rounded-xl">
             <button
               onClick={handleZoomOut}
               data-touchless-clickable="true"
-              className="p-1 rounded hover:bg-slate-800 text-slate-300 transition"
+              className="p-1 rounded-lg hover:bg-slate-800 text-slate-300 transition"
               title="Zoom Out"
             >
               <Minus className="w-3.5 h-3.5" />
             </button>
-            <span className="text-[10px] font-mono px-1 text-cyan-300">
+            <span className="text-[11px] font-mono px-2 text-cyan-300 font-semibold min-w-[42px] text-center">
               {Math.round(zoom * 100)}%
             </span>
             <button
               onClick={handleZoomIn}
               data-touchless-clickable="true"
-              className="p-1 rounded hover:bg-slate-800 text-slate-300 transition"
+              className="p-1 rounded-lg hover:bg-slate-800 text-slate-300 transition"
               title="Zoom In"
             >
               <Plus className="w-3.5 h-3.5" />
@@ -685,10 +710,10 @@ export const MedicalViewer: React.FC<MedicalViewerProps> = ({
             <button
               onClick={handleResetView}
               data-touchless-clickable="true"
-              className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-white transition ml-0.5"
+              className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition ml-0.5"
               title="Reset Pan & Zoom"
             >
-              <RefreshCw className="w-3 h-3" />
+              <RefreshCw className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
@@ -715,6 +740,26 @@ export const MedicalViewer: React.FC<MedicalViewerProps> = ({
               viewMode === 'SPLIT_SCREEN' ? 'border-r border-slate-800' : ''
             } ${isViewportDragOver ? 'ring-4 ring-cyan-400 ring-inset bg-cyan-950/20' : ''}`}
           >
+            {/* Surgical Reticle Corner Brackets */}
+            <div className="absolute top-3 left-3 w-5 h-5 border-t-2 border-l-2 border-cyan-500/40 pointer-events-none z-10" />
+            <div className="absolute top-3 right-3 w-5 h-5 border-t-2 border-r-2 border-cyan-500/40 pointer-events-none z-10" />
+            <div className="absolute bottom-3 left-3 w-5 h-5 border-b-2 border-l-2 border-cyan-500/40 pointer-events-none z-10" />
+            <div className="absolute bottom-3 right-3 w-5 h-5 border-b-2 border-r-2 border-cyan-500/40 pointer-events-none z-10" />
+
+            {/* Anatomical Orientation Compass Labels */}
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 font-mono text-[11px] text-cyan-400/50 pointer-events-none select-none z-10">
+              A
+            </div>
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 font-mono text-[11px] text-cyan-400/50 pointer-events-none select-none z-10">
+              P
+            </div>
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 font-mono text-[11px] text-cyan-400/50 pointer-events-none select-none z-10">
+              R
+            </div>
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 font-mono text-[11px] text-cyan-400/50 pointer-events-none select-none z-10">
+              L
+            </div>
+
             <canvas
               ref={canvasRef}
               width={800}
@@ -738,7 +783,7 @@ export const MedicalViewer: React.FC<MedicalViewerProps> = ({
 
             {/* 3D Spatial Depth Pinch-to-Zoom & Pan Active Floating HUD Indicator */}
             {cursor.isPinching && !cursor.isFrozen && (
-              <div className="absolute top-5 left-1/2 -translate-x-1/2 bg-slate-950/90 border border-cyan-500/80 px-4 py-2.5 rounded-2xl flex items-center gap-3.5 backdrop-blur-md shadow-[0_0_25px_rgba(6,182,212,0.35)] z-30 transition-all pointer-events-none">
+              <div className="absolute top-4 left-4 bg-slate-950/90 border border-cyan-500/80 px-4 py-2.5 rounded-2xl flex items-center gap-3.5 backdrop-blur-md shadow-[0_0_25px_rgba(6,182,212,0.35)] z-30 transition-all pointer-events-none">
                 <div className="relative flex items-center justify-center">
                   <span className="w-3 h-3 rounded-full bg-cyan-400 animate-ping absolute" />
                   <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 relative" />
@@ -773,23 +818,24 @@ export const MedicalViewer: React.FC<MedicalViewerProps> = ({
               </div>
             )}
 
-            {/* Floating Slice Scrub Bar (For multi-slice CT/MRI) */}
+            {/* Ergonomic Floating Slice Scrub Bar (For multi-slice CT/MRI) */}
             {scan.totalSlices > 1 && (
-              <div className="absolute bottom-5 left-1/2 -translate-x-1/2 bg-slate-900/90 border border-slate-700/80 px-4 py-2 rounded-2xl flex items-center gap-3 backdrop-blur-md shadow-2xl z-20">
+              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-slate-900/95 border border-slate-700/90 px-5 py-2.5 rounded-2xl flex items-center gap-4 backdrop-blur-xl shadow-2xl z-20">
                 <button
                   onClick={handlePrevSlice}
                   disabled={sliceIndex <= 1}
                   data-touchless-clickable="true"
-                  className="p-2 rounded-xl bg-slate-800 text-slate-200 hover:bg-slate-700 disabled:opacity-30 disabled:pointer-events-none transition"
+                  className="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-200 hover:bg-slate-700 disabled:opacity-30 disabled:pointer-events-none transition flex items-center gap-1 text-xs font-semibold"
                 >
                   <ChevronLeft className="w-4 h-4" />
+                  <span className="hidden sm:inline">Prev</span>
                 </button>
 
-                <div className="flex flex-col items-center min-w-[140px]">
-                  <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-cyan-400">
-                    <Layers className="w-3.5 h-3.5" />
+                <div className="flex flex-col items-center min-w-[170px]">
+                  <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-cyan-300">
+                    <Layers className="w-3.5 h-3.5 text-cyan-400" />
                     <span>
-                      SLICE {sliceIndex} / {scan.totalSlices}
+                      SLICE {sliceIndex} OF {scan.totalSlices}
                     </span>
                   </div>
                   <input
@@ -803,7 +849,7 @@ export const MedicalViewer: React.FC<MedicalViewerProps> = ({
                       audioService.playTick(900);
                       onSliceChange?.(val);
                     }}
-                    className="w-32 h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-400 mt-1"
+                    className="w-36 h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400 mt-1.5"
                   />
                 </div>
 
@@ -811,8 +857,9 @@ export const MedicalViewer: React.FC<MedicalViewerProps> = ({
                   onClick={handleNextSlice}
                   disabled={sliceIndex >= scan.totalSlices}
                   data-touchless-clickable="true"
-                  className="p-2 rounded-xl bg-slate-800 text-slate-200 hover:bg-slate-700 disabled:opacity-30 disabled:pointer-events-none transition"
+                  className="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-200 hover:bg-slate-700 disabled:opacity-30 disabled:pointer-events-none transition flex items-center gap-1 text-xs font-semibold"
                 >
+                  <span className="hidden sm:inline">Next</span>
                   <ChevronRight className="w-4 h-4" />
                 </button>
               </div>

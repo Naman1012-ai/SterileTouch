@@ -120,65 +120,107 @@ export const PatientRecords: React.FC<PatientRecordsProps> = ({
               </div>
             </div>
 
-            {/* Labs Data Table */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 font-mono">
-              <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3">
-                <div className="text-[10px] text-slate-400">HEMOGLOBIN (Hb)</div>
-                <div className="text-2xl font-bold text-white mt-1">
+            {/* Labs Data Table with Reference Range Bars */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 font-mono">
+              <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5 shadow-sm">
+                <div className="flex items-center justify-between text-[10px] text-slate-400">
+                  <span>HEMOGLOBIN (Hb)</span>
+                  <span className="text-emerald-400 bg-emerald-950/60 px-1.5 py-0.2 rounded border border-emerald-800/40">NORMAL</span>
+                </div>
+                <div className="text-2xl font-bold text-white mt-1.5">
                   {patient.labs.hemoglobin}
                 </div>
-                <div className="text-[10px] text-emerald-400 mt-1">
-                  Reference: 13.0 - 17.5 g/dL (Normal)
+                <div className="text-[10px] text-slate-400 mt-1 flex items-center justify-between">
+                  <span>Range: 13.0 - 17.5 g/dL</span>
+                  <span className="text-emerald-400 font-semibold">14.2 g/dL</span>
+                </div>
+                <div className="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
+                  <div className="bg-emerald-400 h-full rounded-full" style={{ width: '65%' }} />
                 </div>
               </div>
 
-              <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3">
-                <div className="text-[10px] text-slate-400">PLATELET COUNT</div>
-                <div className="text-2xl font-bold text-white mt-1">
+              <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5 shadow-sm">
+                <div className="flex items-center justify-between text-[10px] text-slate-400">
+                  <span>PLATELET COUNT</span>
+                  <span className="text-emerald-400 bg-emerald-950/60 px-1.5 py-0.2 rounded border border-emerald-800/40">NORMAL</span>
+                </div>
+                <div className="text-2xl font-bold text-white mt-1.5">
                   {patient.labs.platelets}
                 </div>
-                <div className="text-[10px] text-emerald-400 mt-1">
-                  Reference: 150K - 450K /uL (Normal)
+                <div className="text-[10px] text-slate-400 mt-1 flex items-center justify-between">
+                  <span>Range: 150K - 450K /uL</span>
+                  <span className="text-emerald-400 font-semibold">Adequate</span>
+                </div>
+                <div className="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
+                  <div className="bg-emerald-400 h-full rounded-full" style={{ width: '55%' }} />
                 </div>
               </div>
 
-              <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3">
-                <div className="text-[10px] text-slate-400">WHITE BLOOD CELLS (WBC)</div>
-                <div className="text-2xl font-bold text-white mt-1">
+              <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5 shadow-sm">
+                <div className="flex items-center justify-between text-[10px] text-slate-400">
+                  <span>WHITE BLOOD CELLS (WBC)</span>
+                  <span className="text-emerald-400 bg-emerald-950/60 px-1.5 py-0.2 rounded border border-emerald-800/40">NORMAL</span>
+                </div>
+                <div className="text-2xl font-bold text-white mt-1.5">
                   {patient.labs.wbc}
                 </div>
-                <div className="text-[10px] text-emerald-400 mt-1">
-                  Reference: 4.5 - 11.0 /uL (Normal)
+                <div className="text-[10px] text-slate-400 mt-1 flex items-center justify-between">
+                  <span>Range: 4.5 - 11.0 /uL</span>
+                  <span className="text-emerald-400 font-semibold">6.8 /uL</span>
+                </div>
+                <div className="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
+                  <div className="bg-emerald-400 h-full rounded-full" style={{ width: '45%' }} />
                 </div>
               </div>
 
-              <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3">
-                <div className="text-[10px] text-slate-400">COAGULATION PT / INR</div>
-                <div className="text-2xl font-bold text-white mt-1">
+              <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5 shadow-sm">
+                <div className="flex items-center justify-between text-[10px] text-slate-400">
+                  <span>COAGULATION PT / INR</span>
+                  <span className="text-emerald-400 bg-emerald-950/60 px-1.5 py-0.2 rounded border border-emerald-800/40">CLEAR</span>
+                </div>
+                <div className="text-2xl font-bold text-white mt-1.5">
                   {patient.labs.ptInr}
                 </div>
-                <div className="text-[10px] text-emerald-400 mt-1">
-                  Target: &lt; 1.20 for neurosurgery
+                <div className="text-[10px] text-slate-400 mt-1 flex items-center justify-between">
+                  <span>Target: &lt; 1.20 Neurosurgery</span>
+                  <span className="text-emerald-400 font-semibold">1.0 INR</span>
+                </div>
+                <div className="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
+                  <div className="bg-emerald-400 h-full rounded-full" style={{ width: '35%' }} />
                 </div>
               </div>
 
-              <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3">
-                <div className="text-[10px] text-slate-400">SERUM POTASSIUM (K+)</div>
-                <div className="text-2xl font-bold text-white mt-1">
+              <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5 shadow-sm">
+                <div className="flex items-center justify-between text-[10px] text-slate-400">
+                  <span>SERUM POTASSIUM (K+)</span>
+                  <span className="text-emerald-400 bg-emerald-950/60 px-1.5 py-0.2 rounded border border-emerald-800/40">NORMAL</span>
+                </div>
+                <div className="text-2xl font-bold text-white mt-1.5">
                   {patient.labs.potassium}
                 </div>
-                <div className="text-[10px] text-emerald-400 mt-1">
-                  Reference: 3.5 - 5.0 mEq/L (Normal)
+                <div className="text-[10px] text-slate-400 mt-1 flex items-center justify-between">
+                  <span>Range: 3.5 - 5.0 mEq/L</span>
+                  <span className="text-emerald-400 font-semibold">4.1 mEq/L</span>
+                </div>
+                <div className="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
+                  <div className="bg-emerald-400 h-full rounded-full" style={{ width: '50%' }} />
                 </div>
               </div>
 
-              <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3">
-                <div className="text-[10px] text-slate-400">SERUM SODIUM (Na+)</div>
-                <div className="text-2xl font-bold text-white mt-1">
+              <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5 shadow-sm">
+                <div className="flex items-center justify-between text-[10px] text-slate-400">
+                  <span>SERUM SODIUM (Na+)</span>
+                  <span className="text-emerald-400 bg-emerald-950/60 px-1.5 py-0.2 rounded border border-emerald-800/40">NORMAL</span>
+                </div>
+                <div className="text-2xl font-bold text-white mt-1.5">
                   {patient.labs.sodium}
                 </div>
-                <div className="text-[10px] text-emerald-400 mt-1">
-                  Reference: 135 - 145 mEq/L (Normal)
+                <div className="text-[10px] text-slate-400 mt-1 flex items-center justify-between">
+                  <span>Range: 135 - 145 mEq/L</span>
+                  <span className="text-emerald-400 font-semibold">139 mEq/L</span>
+                </div>
+                <div className="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
+                  <div className="bg-emerald-400 h-full rounded-full" style={{ width: '48%' }} />
                 </div>
               </div>
             </div>

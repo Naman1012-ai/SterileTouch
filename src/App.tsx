@@ -6,7 +6,6 @@ import { SurgicalChecklist } from './components/checklist/SurgicalChecklist';
 import { VitalsMonitor } from './components/vitals/VitalsMonitor';
 import { PatientRecords } from './components/records/PatientRecords';
 import { CameraFeed } from './components/hud/CameraFeed';
-import { GestureBadge } from './components/hud/GestureBadge';
 import { VirtualCursor } from './components/hud/VirtualCursor';
 import { AuditLogModal } from './components/checklist/AuditLogModal';
 import { GesturesHelpModal } from './components/hud/GesturesHelpModal';
@@ -515,9 +514,10 @@ export const App: React.FC = () => {
 
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-slate-950 text-slate-100 font-sans relative">
-      {/* Operating Room Header */}
+      {/* Operating Room Header with Integrated Telemetry */}
       <Header
         patient={activePatient}
+        gestureResult={gestureResult}
         isMuted={isMuted}
         onToggleMute={handleToggleMute}
         onOpenHelp={() => setIsHelpModalOpen(true)}
@@ -532,11 +532,6 @@ export const App: React.FC = () => {
         currentPatientId={currentPatientId}
         onPatientChange={setCurrentPatientId}
       />
-
-      {/* Dynamic Telemetry Gesture Indicator Badge (Top Center) */}
-      <div className="absolute top-16 left-1/2 -translate-x-1/2 z-30 pointer-events-none">
-        <GestureBadge detection={gestureResult} />
-      </div>
 
       {/* Main Workspace Display Port */}
       <main className="flex-1 relative overflow-hidden flex flex-col">

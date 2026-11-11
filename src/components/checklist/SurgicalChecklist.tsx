@@ -136,41 +136,47 @@ export const SurgicalChecklist: React.FC<SurgicalChecklistProps> = ({
     );
   };
 
+  const currentPhaseAllCompleted = currentPhaseItems.length > 0 && currentPhaseItems.every((i) => i.isCompleted);
+
   return (
     <div className="flex-1 flex flex-col h-full bg-slate-950 p-6 overflow-y-auto select-none">
-      {/* Top Banner & Progress */}
+      {/* Top Banner & Compliance Progress */}
       <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 mb-6 shadow-xl backdrop-blur-md">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+            <div className="flex items-center gap-2.5 mb-1.5">
+              <span className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.2)]">
                 <ShieldCheck className="w-5 h-5" />
               </span>
-              <h2 className="text-lg font-bold text-white tracking-tight">
-                WHO Surgical Safety Verification Checklist
-              </h2>
-              <span className="text-[10px] font-mono bg-emerald-950 text-emerald-400 border border-emerald-800/80 px-2 py-0.5 rounded font-semibold uppercase">
-                Touchless Sign-Off
-              </span>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg font-bold text-white tracking-tight">
+                    WHO Surgical Safety Verification Checklist
+                  </h2>
+                  <span className="text-[10px] font-mono bg-emerald-950 text-emerald-300 border border-emerald-800/80 px-2 py-0.5 rounded font-semibold uppercase">
+                    Touchless Protocol
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Universal sterile checklist standard. Confirm critical stages touchlessly via{' '}
+                  <strong className="text-emerald-400">Thumbs-Up gesture</strong> or air-click.
+                </p>
+              </div>
             </div>
-            <p className="text-xs text-slate-400">
-              World Health Organization surgical safety standard. Verify critical checkpoints touchlessly via{' '}
-              <strong className="text-emerald-400">Thumbs-Up gesture</strong> or air-click.
-            </p>
           </div>
 
           {/* Progress & Compliance Metrics */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-5">
             <div className="flex flex-col items-end">
               <div className="text-xs font-mono text-slate-300">
-                Verification Progress: <span className="text-emerald-400 font-bold">{progressPercent}%</span>
+                Compliance Score: <span className="text-emerald-400 font-bold text-sm">{progressPercent}%</span>
               </div>
-              <div className="text-[11px] text-slate-500 font-mono">
-                {completedCount} of {totalCount} Items Completed
+              <div className="text-[11px] text-slate-400 font-mono mt-0.5">
+                {completedCount} of {totalCount} Checkpoints Verified
               </div>
-              <div className="w-44 h-2 bg-slate-800 rounded-full mt-1.5 overflow-hidden border border-slate-700">
+              <div className="w-48 h-2 bg-slate-800 rounded-full mt-1.5 overflow-hidden border border-slate-700/80">
                 <div
-                  className="h-full bg-gradient-to-r from-emerald-500 to-cyan-400 transition-all duration-500"
+                  className="h-full bg-gradient-to-r from-emerald-500 to-cyan-400 transition-all duration-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]"
                   style={{ width: `${progressPercent}%` }}
                 />
               </div>
@@ -179,7 +185,7 @@ export const SurgicalChecklist: React.FC<SurgicalChecklistProps> = ({
             <button
               onClick={onOpenAuditModal}
               data-touchless-clickable="true"
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-xs font-medium text-slate-200 hover:text-cyan-300 hover:border-cyan-500/50 shadow-md transition"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800/90 border border-slate-700 text-xs font-semibold text-slate-200 hover:text-cyan-300 hover:border-cyan-500/60 shadow-md transition"
             >
               <History className="w-4 h-4 text-cyan-400" />
               <span>Audit Trail</span>
@@ -187,9 +193,9 @@ export const SurgicalChecklist: React.FC<SurgicalChecklistProps> = ({
           </div>
         </div>
 
-        {/* Phase Selector Tabs */}
-        <div className="flex items-center gap-2 mt-5 pt-4 border-t border-slate-800/80">
-          {(['SIGN_IN', 'TIME_OUT', 'SIGN_OUT'] as ChecklistPhase[]).map((phase) => {
+        {/* Phase Selector Timeline Tabs */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-5 pt-4 border-t border-slate-800/80">
+          {(['SIGN_IN', 'TIME_OUT', 'SIGN_OUT'] as ChecklistPhase[]).map((phase, idx) => {
             const isSelected = selectedPhase === phase;
             const phaseItems = items.filter((i) => i.phase === phase);
             const phaseCompleted = phaseItems.every((i) => i.isCompleted);
@@ -199,6 +205,12 @@ export const SurgicalChecklist: React.FC<SurgicalChecklistProps> = ({
                 : phase === 'TIME_OUT'
                 ? 'Phase 2: Time Out'
                 : 'Phase 3: Sign Out';
+            const phaseSub =
+              phase === 'SIGN_IN'
+                ? 'Before Anesthesia Induction'
+                : phase === 'TIME_OUT'
+                ? 'Before Skin Incision'
+                : 'Before Patient Leaves OR';
 
             return (
               <button
@@ -208,17 +220,28 @@ export const SurgicalChecklist: React.FC<SurgicalChecklistProps> = ({
                   audioService.playClick();
                 }}
                 data-touchless-clickable="true"
-                className={`flex-1 py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-between transition ${
+                className={`py-2.5 px-3.5 rounded-xl border text-xs font-semibold flex items-center justify-between transition-all ${
                   isSelected
-                    ? 'bg-slate-800 border-cyan-500/50 text-cyan-300 shadow-md'
-                    : 'bg-slate-950/60 border-slate-800/80 text-slate-400 hover:text-slate-200'
+                    ? 'bg-slate-800/90 border-cyan-500/70 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.2)]'
+                    : phaseCompleted
+                    ? 'bg-emerald-950/30 border-emerald-900/50 text-emerald-400 hover:bg-emerald-950/50'
+                    : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200'
                 }`}
               >
-                <span>{phaseName}</span>
+                <div className="flex flex-col text-left">
+                  <div className="flex items-center gap-2">
+                    <span className="w-4 h-4 rounded-full bg-slate-800 text-[10px] font-mono flex items-center justify-center">
+                      {idx + 1}
+                    </span>
+                    <span className="font-bold">{phaseName}</span>
+                  </div>
+                  <span className="text-[10px] font-normal text-slate-400 mt-0.5">{phaseSub}</span>
+                </div>
+
                 {phaseCompleted ? (
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 ml-2" />
                 ) : (
-                  <span className="text-[10px] font-mono text-slate-500">
+                  <span className="text-[11px] font-mono font-semibold text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800 ml-2">
                     {phaseItems.filter((i) => i.isCompleted).length}/{phaseItems.length}
                   </span>
                 )}
@@ -228,9 +251,24 @@ export const SurgicalChecklist: React.FC<SurgicalChecklistProps> = ({
         </div>
       </div>
 
+      {/* Phase Completion Alert Banner */}
+      {currentPhaseAllCompleted && (
+        <div className="max-w-4xl mx-auto w-full mb-4 bg-emerald-950/70 border border-emerald-500/60 rounded-xl p-3 flex items-center justify-between text-xs text-emerald-200 shadow-md">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            <span className="font-semibold text-white">
+              All checkpoints in {selectedPhase.replace('_', ' ')} are verified and electronically signed.
+            </span>
+          </div>
+          <span className="font-mono text-[10px] uppercase bg-emerald-900/80 px-2 py-0.5 rounded text-emerald-300 border border-emerald-700/50">
+            Phase Certified
+          </span>
+        </div>
+      )}
+
       {/* Checklist Items for Current Phase */}
       <div className="space-y-3 max-w-4xl mx-auto w-full">
-        {currentPhaseItems.map((item) => {
+        {currentPhaseItems.map((item, index) => {
           const isHovered = hoveredItemId === item.id;
           return (
             <div
@@ -241,36 +279,42 @@ export const SurgicalChecklist: React.FC<SurgicalChecklistProps> = ({
               onMouseLeave={() => setHoveredItemId(null)}
               className={`p-4 rounded-xl border transition-all ${
                 item.isCompleted
-                  ? 'bg-slate-900/60 border-emerald-900/40 text-slate-300'
+                  ? 'bg-slate-900/60 border-emerald-900/50 text-slate-300 shadow-sm'
                   : isHovered
-                  ? 'bg-slate-900 border-cyan-500/70 shadow-lg shadow-cyan-950/40'
+                  ? 'bg-slate-900 border-cyan-500/70 shadow-lg shadow-cyan-950/40 ring-1 ring-cyan-500/30'
                   : 'bg-slate-900/80 border-slate-800 hover:border-slate-700'
               }`}
             >
               <div className="flex items-start justify-between gap-4">
-                <div className="flex items-start gap-3">
+                <div className="flex items-start gap-3.5">
                   <div
-                    className={`mt-0.5 w-6 h-6 rounded-lg flex items-center justify-center border transition ${
+                    className={`mt-0.5 w-7 h-7 rounded-lg flex items-center justify-center border font-mono text-xs font-bold transition shrink-0 ${
                       item.isCompleted
-                        ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-400'
-                        : 'bg-slate-800 border-slate-700 text-slate-500'
+                        ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400'
+                        : 'bg-slate-800 border-slate-700 text-slate-400'
                     }`}
                   >
                     {item.isCompleted ? (
                       <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                     ) : (
-                      <div className="w-2 h-2 rounded-full bg-slate-600" />
+                      <span>{String(index + 1).padStart(2, '0')}</span>
                     )}
                   </div>
 
                   <div>
-                    <h3
-                      className={`text-sm font-semibold tracking-wide ${
-                        item.isCompleted ? 'text-slate-300 line-through opacity-85' : 'text-white'
-                      }`}
-                    >
-                      {item.title}
-                    </h3>
+                    <div className="flex items-center gap-2">
+                      <h3
+                        className={`text-sm font-semibold tracking-wide ${
+                          item.isCompleted ? 'text-slate-300 line-through opacity-85' : 'text-white'
+                        }`}
+                      >
+                        {item.title}
+                      </h3>
+                      <span className="text-[10px] font-mono uppercase bg-slate-800 text-slate-400 px-1.5 py-0.2 rounded border border-slate-700/60">
+                        {item.phaseTitle}
+                      </span>
+                    </div>
+
                     <p className="text-xs text-slate-400 mt-1 leading-relaxed">
                       {item.description}
                     </p>
@@ -300,20 +344,20 @@ export const SurgicalChecklist: React.FC<SurgicalChecklistProps> = ({
 
                 {/* Verification Trigger Button */}
                 {!item.isCompleted && (
-                  <div className="flex flex-col items-end">
+                  <div className="flex flex-col items-end shrink-0">
                     <button
                       onClick={() => completeItem(item.id, 'CLICK')}
                       data-touchless-clickable="true"
                       data-id={item.id}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-md shadow-emerald-950 transition active:scale-95"
+                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-md shadow-emerald-950 transition active:scale-95"
                     >
                       <ThumbsUp className="w-3.5 h-3.5" />
-                      <span>Sign Off</span>
+                      <span>Verify & Sign</span>
                     </button>
 
                     {/* Thumbs-Up Hold Feedback */}
                     {isHovered && gestureResult.isThumbsUp && (
-                      <div className="mt-2 text-[10px] font-mono text-emerald-300 flex items-center gap-1">
+                      <div className="mt-2 text-[10px] font-mono text-emerald-300 flex items-center gap-1 animate-pulse">
                         <Sparkles className="w-3 h-3 animate-spin" />
                         <span>Holding Thumbs-Up...</span>
                       </div>

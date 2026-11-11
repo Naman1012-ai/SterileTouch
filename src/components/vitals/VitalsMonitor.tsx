@@ -274,14 +274,17 @@ export const VitalsMonitor: React.FC<VitalsMonitorProps> = ({
       )}
 
       {/* Main Cardiac Waveforms & Telemetry Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6">
-        {/* ECG Lead II Waveform */}
-        <div className="lg:col-span-3 bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="font-mono text-xs font-bold text-slate-200">
-                ECG - LEAD II (1.0 mV/cm, 25 mm/s)
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-5">
+        {/* Real-Time Biological Oscilloscope (Lead II & Pleth) */}
+        <div className="lg:col-span-3 bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col backdrop-blur-md">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+              <span className="font-mono text-xs font-bold text-white tracking-wide">
+                PHYSIOLOGICAL OSCILLOSCOPE — 2 CHANNELS
+              </span>
+              <span className="text-[10px] font-mono text-slate-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
+                SWEEP: 25 mm/s • GAIN: 1.0 mV/cm
               </span>
             </div>
 
@@ -289,22 +292,22 @@ export const VitalsMonitor: React.FC<VitalsMonitorProps> = ({
               <button
                 onClick={() => setSoundEnabled(!soundEnabled)}
                 data-touchless-clickable="true"
-                className={`p-1.5 rounded-lg border text-xs transition ${
+                className={`p-1.5 rounded-xl border text-xs transition ${
                   soundEnabled
-                    ? 'bg-emerald-950 border-emerald-500/50 text-emerald-300'
-                    : 'bg-slate-800 border-slate-700 text-slate-400'
+                    ? 'bg-emerald-950 border-emerald-500/50 text-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.2)]'
+                    : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-200'
                 }`}
                 title="Toggle Cardiac Pulse Tone"
               >
-                {soundEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+                {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
               </button>
 
               <button
                 onClick={toggleEmergencySimulation}
                 data-touchless-clickable="true"
-                className={`px-2.5 py-1 rounded-lg text-xs font-mono font-semibold border transition ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-mono font-semibold border transition ${
                   isSimulatingEmergency
-                    ? 'bg-rose-950 text-rose-300 border-rose-500/60'
+                    ? 'bg-rose-950 text-rose-300 border-rose-500/60 shadow-[0_0_12px_rgba(244,63,94,0.3)]'
                     : 'bg-slate-800 text-slate-300 border-slate-700 hover:text-white'
                 }`}
               >
@@ -314,44 +317,53 @@ export const VitalsMonitor: React.FC<VitalsMonitorProps> = ({
           </div>
 
           {/* Canvas Waveforms */}
-          <div className="flex-1 min-h-[160px] bg-slate-950 rounded-xl border border-slate-800/80 overflow-hidden relative">
-            <canvas
-              ref={ecgCanvasRef}
-              width={750}
-              height={180}
-              className="w-full h-full block"
-            />
-          </div>
-
-          {/* Plethysmogram (Pulse Oximetry Wave) */}
-          <div className="mt-3">
-            <div className="flex items-center justify-between text-[11px] font-mono text-cyan-400 mb-1">
-              <span>PLETH - PULSE OXIMETRY DUAL BEAM</span>
-              <span>INDEX: 98%</span>
+          <div className="flex flex-col gap-3">
+            {/* ECG Lead II Channel */}
+            <div className="bg-slate-950 rounded-xl border border-slate-800/80 p-2 overflow-hidden relative">
+              <div className="flex items-center justify-between text-[10px] font-mono text-emerald-400 mb-1 px-1">
+                <span>ECG LEAD II (BIPOLAR FRONTAL)</span>
+                <span>RATE: {vitals.heartRate} BPM</span>
+              </div>
+              <div className="h-36 w-full relative">
+                <canvas
+                  ref={ecgCanvasRef}
+                  width={750}
+                  height={144}
+                  className="w-full h-full block"
+                />
+              </div>
             </div>
-            <div className="h-20 bg-slate-950 rounded-xl border border-slate-800/80 overflow-hidden">
-              <canvas
-                ref={plethCanvasRef}
-                width={750}
-                height={80}
-                className="w-full h-full block"
-              />
+
+            {/* Plethysmogram Channel */}
+            <div className="bg-slate-950 rounded-xl border border-slate-800/80 p-2 overflow-hidden relative">
+              <div className="flex items-center justify-between text-[10px] font-mono text-cyan-400 mb-1 px-1">
+                <span>PLETH — PULSE OXIMETRY DUAL-BEAM PHOTOPLETHYSMOGRAPHY</span>
+                <span>PERFUSION INDEX: 98%</span>
+              </div>
+              <div className="h-20 w-full relative">
+                <canvas
+                  ref={plethCanvasRef}
+                  width={750}
+                  height={80}
+                  className="w-full h-full block"
+                />
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Primary Cardiac Vitals Tile */}
+        {/* Primary Cardiac Digital Parameter Tiles */}
         <div className="flex flex-col gap-3">
-          {/* Heart Rate Card */}
+          {/* Heart Rate Tile */}
           <div
             className={`p-4 rounded-2xl border transition-all ${
               vitals.status === 'CRITICAL'
-                ? 'bg-rose-950/60 border-rose-500/80 text-rose-300'
-                : 'bg-slate-900/90 border-slate-800 text-slate-200'
+                ? 'bg-rose-950/60 border-rose-500/80 text-rose-300 shadow-[0_0_20px_rgba(244,63,94,0.3)]'
+                : 'bg-slate-900/90 border-slate-800 text-slate-200 shadow-md'
             }`}
           >
             <div className="flex items-center justify-between text-xs font-mono">
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-2">
                 <Heart
                   className={`w-4 h-4 ${
                     vitals.status === 'CRITICAL'
@@ -359,95 +371,100 @@ export const VitalsMonitor: React.FC<VitalsMonitorProps> = ({
                       : 'text-emerald-400 animate-pulse'
                   }`}
                 />
-                <span className="font-semibold">HEART RATE</span>
+                <span className="font-bold tracking-wide text-slate-300">HEART RATE</span>
               </div>
-              <span className="text-[10px] text-slate-400">BPM</span>
+              <span className="text-[10px] font-mono text-slate-400 uppercase">BPM</span>
             </div>
-            <div className="text-4xl font-mono font-bold mt-2 text-white">
+            <div className="text-5xl font-mono font-bold mt-2 text-white">
               {vitals.heartRate}
             </div>
-            <div className="text-[11px] font-mono text-slate-400 mt-1">
-              Limits: 50 - 110 BPM
+            <div className="text-[11px] font-mono text-slate-400 mt-1 flex items-center justify-between">
+              <span>Normal: 60 - 100</span>
+              <span className="text-emerald-400 font-bold">SINUS RHYTHM</span>
             </div>
           </div>
 
-          {/* SpO2 Card */}
+          {/* SpO2 Pulse Oximetry Tile */}
           <div
             className={`p-4 rounded-2xl border transition-all ${
               vitals.spo2 < 92
-                ? 'bg-rose-950/60 border-rose-500/80 text-rose-300'
-                : 'bg-slate-900/90 border-slate-800 text-slate-200'
+                ? 'bg-rose-950/60 border-rose-500/80 text-rose-300 shadow-[0_0_20px_rgba(244,63,94,0.3)]'
+                : 'bg-slate-900/90 border-slate-800 text-slate-200 shadow-md'
             }`}
           >
             <div className="flex items-center justify-between text-xs font-mono">
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-2">
                 <Activity className="w-4 h-4 text-cyan-400" />
-                <span className="font-semibold">SpO2 PULSE OX</span>
+                <span className="font-bold tracking-wide text-slate-300">SpO2 PULSE OX</span>
               </div>
-              <span className="text-[10px] text-slate-400">%</span>
+              <span className="text-[10px] font-mono text-slate-400 uppercase">% SAT</span>
             </div>
-            <div className="text-4xl font-mono font-bold mt-2 text-cyan-300">
+            <div className="text-5xl font-mono font-bold mt-2 text-cyan-300">
               {vitals.spo2}
             </div>
-            <div className="text-[11px] font-mono text-slate-400 mt-1">
-              Normal: 95 - 100%
+            <div className="text-[11px] font-mono text-slate-400 mt-1 flex items-center justify-between">
+              <span>Target: &gt; 95%</span>
+              <span className="text-cyan-400 font-bold">O2 SATURATED</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Secondary Hemodynamic Metrics Grid */}
+      {/* Secondary Hemodynamic & Physiological Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {/* NIBP / Arterial Line */}
-        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4">
+        {/* NIBP / Arterial Line Tile */}
+        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-md">
           <div className="flex items-center justify-between text-xs font-mono text-slate-400 mb-1">
-            <span>NIBP BLOOD PRESSURE</span>
+            <span className="font-bold text-amber-400">NIBP BLOOD PRESSURE</span>
             <span>mmHg</span>
           </div>
           <div className="flex items-baseline gap-2 mt-1">
             <span className="text-3xl font-mono font-bold text-amber-300">
               {vitals.bpSystolic}/{vitals.bpDiastolic}
             </span>
-            <span className="text-xs font-mono text-slate-400">
+            <span className="text-xs font-mono text-slate-400 font-bold">
               (MAP {vitals.meanArterialPressure})
             </span>
           </div>
-          <div className="text-[11px] font-mono text-slate-500 mt-2">
-            Target MAP &gt; 65 mmHg
+          <div className="text-[11px] font-mono text-slate-500 mt-2 flex items-center justify-between">
+            <span>Target MAP &gt; 65 mmHg</span>
+            <span className="text-amber-400/90 font-medium">NORMOTENSIVE</span>
           </div>
         </div>
 
-        {/* Respiration Rate */}
-        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4">
+        {/* Respiration Rate Tile */}
+        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-md">
           <div className="flex items-center justify-between text-xs font-mono text-slate-400 mb-1">
             <div className="flex items-center gap-1.5">
               <Wind className="w-3.5 h-3.5 text-indigo-400" />
-              <span>RESPIRATION RATE</span>
+              <span className="font-bold text-indigo-400">RESPIRATION RATE</span>
             </div>
             <span>/min</span>
           </div>
           <div className="text-3xl font-mono font-bold text-indigo-300 mt-1">
             {vitals.respiratoryRate}
           </div>
-          <div className="text-[11px] font-mono text-slate-500 mt-2">
-            Mechanical Ventilator Synchronized
+          <div className="text-[11px] font-mono text-slate-500 mt-2 flex items-center justify-between">
+            <span>Ventilator Synced</span>
+            <span className="text-indigo-400/90 font-medium">EUPNEA</span>
           </div>
         </div>
 
-        {/* Core Temperature */}
-        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4">
+        {/* Core Temperature Tile */}
+        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-md">
           <div className="flex items-center justify-between text-xs font-mono text-slate-400 mb-1">
             <div className="flex items-center gap-1.5">
               <Thermometer className="w-3.5 h-3.5 text-orange-400" />
-              <span>CORE BODY TEMP</span>
+              <span className="font-bold text-orange-400">CORE BODY TEMP</span>
             </div>
             <span>°C</span>
           </div>
           <div className="text-3xl font-mono font-bold text-orange-300 mt-1">
             {vitals.coreTempC}
           </div>
-          <div className="text-[11px] font-mono text-slate-500 mt-2">
-            Esophageal Temperature Probe
+          <div className="text-[11px] font-mono text-slate-500 mt-2 flex items-center justify-between">
+            <span>Esophageal Probe</span>
+            <span className="text-orange-400/90 font-medium">NORMOTHERMIC</span>
           </div>
         </div>
       </div>

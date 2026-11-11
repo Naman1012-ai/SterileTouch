@@ -11,11 +11,14 @@ import {
   VolumeX,
 } from 'lucide-react';
 import { PatientProfile } from '../../types/medical';
+import { GestureDetectionResult } from '../../types/gestures';
 import { audioService } from '../../services/audioFeedback';
 import { VoiceIndicatorHUD } from '../hud/VoiceIndicatorHUD';
+import { GestureBadge } from '../hud/GestureBadge';
 
 interface HeaderProps {
   patient: PatientProfile;
+  gestureResult: GestureDetectionResult;
   isMuted: boolean;
   onToggleMute: () => void;
   onOpenHelp: () => void;
@@ -24,6 +27,7 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({
   patient,
+  gestureResult,
   isMuted,
   onToggleMute,
   onOpenHelp,
@@ -60,10 +64,10 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="h-14 bg-slate-950/90 border-b border-slate-800/80 px-4 flex items-center justify-between text-slate-200 z-30 select-none">
-      {/* Brand & System Mode */}
+    <header className="h-14 bg-slate-950/95 border-b border-slate-800/80 px-4 flex items-center justify-between text-slate-200 z-30 select-none relative shadow-sm">
+      {/* Left Section: Brand & Terminal Status */}
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.25)]">
             <ShieldCheck className="w-5 h-5" />
           </div>
@@ -78,32 +82,28 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Separator */}
-        <div className="h-7 w-px bg-slate-800 hidden md:block" />
+        <div className="h-6 w-px bg-slate-800 hidden sm:block" />
 
-        {/* Active Patient Capsule */}
-        <div className="hidden lg:flex items-center gap-2.5 bg-slate-900/90 border border-slate-800 px-3 py-1 rounded-lg">
-          <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <div className="text-xs">
-            <span className="font-semibold text-slate-200">{patient.name}</span>
-            <span className="text-slate-400 font-mono ml-2">({patient.mrn})</span>
-          </div>
-          <span className="text-[11px] font-mono text-cyan-400 bg-cyan-950/50 px-1.5 py-0.5 rounded border border-cyan-800/40">
-            {patient.orRoom}
-          </span>
-          <span className="text-[11px] text-amber-300/90 font-medium">
-            {patient.scheduledProcedure}
-          </span>
+        <div className="hidden md:flex items-center gap-1.5 text-xs font-mono text-slate-400">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="text-slate-300 font-medium">{patient.orRoom}</span>
         </div>
       </div>
 
-      {/* Right Controls & Clock */}
-      <div className="flex items-center gap-2.5">
+      {/* Center Section: Integrated Touchless Gesture Telemetry Capsule */}
+      <div className="flex items-center justify-center pointer-events-none">
+        <GestureBadge detection={gestureResult} />
+      </div>
+
+      {/* Right Section: Clinical Utilities & System Controls */}
+      <div className="flex items-center gap-2">
         {/* Voice Assistant HUD */}
         <VoiceIndicatorHUD />
 
+        <div className="h-5 w-px bg-slate-800/80 hidden sm:block" />
+
         {/* Live Clock */}
-        <div className="font-mono text-xs text-slate-300 bg-slate-900 border border-slate-800 px-2.5 py-1 rounded-md hidden sm:flex items-center gap-1.5">
+        <div className="font-mono text-xs text-slate-300 bg-slate-900 border border-slate-800 px-2.5 py-1 rounded-lg hidden lg:flex items-center gap-1.5">
           <Activity className="w-3.5 h-3.5 text-cyan-400" />
           <span>{time}</span>
         </div>
@@ -122,6 +122,19 @@ export const Header: React.FC<HeaderProps> = ({
           {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
         </button>
 
+        {/* Doctor Onboarding & Calibration Tutorial */}
+        {onOpenTutorial && (
+          <button
+            onClick={onOpenTutorial}
+            data-touchless-clickable="true"
+            title="Doctor Onboarding Tutorial & Touchless Calibration"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-emerald-900/60 bg-emerald-950/40 text-emerald-300 hover:text-emerald-200 hover:border-emerald-500/50 text-xs font-medium transition shadow-[0_0_8px_rgba(16,185,129,0.15)]"
+          >
+            <Sparkles className="w-4 h-4 text-emerald-400" />
+            <span className="hidden xl:inline">Tutorial</span>
+          </button>
+        )}
+
         {/* Gesture Guide Help */}
         <button
           onClick={onOpenHelp}
@@ -132,19 +145,6 @@ export const Header: React.FC<HeaderProps> = ({
           <HelpCircle className="w-4 h-4 text-cyan-400" />
           <span className="hidden sm:inline">Gestures</span>
         </button>
-
-        {/* Doctor Onboarding & Calibration Tutorial */}
-        {onOpenTutorial && (
-          <button
-            onClick={onOpenTutorial}
-            data-touchless-clickable="true"
-            title="Doctor Onboarding Tutorial & Touchless Calibration"
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-emerald-900/60 bg-emerald-950/40 text-emerald-300 hover:text-emerald-200 hover:border-emerald-500/50 text-xs font-medium transition shadow-[0_0_8px_rgba(16,185,129,0.15)]"
-          >
-            <Sparkles className="w-4 h-4 text-emerald-400" />
-            <span className="hidden sm:inline">Tutorial</span>
-          </button>
-        )}
 
         {/* Fullscreen Toggle */}
         <button
