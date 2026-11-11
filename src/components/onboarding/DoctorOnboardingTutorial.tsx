@@ -22,6 +22,7 @@ import {
 import confetti from 'canvas-confetti';
 import { audioService } from '../../services/audioFeedback';
 import { voiceAssistantService } from '../../services/voiceAssistant';
+import { SterileTouchLogo } from '../brand/SterileTouchLogo';
 import {
   GestureDetectionResult,
   Point3D,
@@ -310,9 +311,7 @@ export const DoctorOnboardingTutorial: React.FC<DoctorOnboardingTutorialProps> =
         {/* TOP STATUS BAR & HEADER */}
         <div className="px-6 py-4 border-b border-slate-800 bg-slate-950/60 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.3)]">
-              <ShieldCheck className="w-6 h-6" />
-            </div>
+            <SterileTouchLogo variant="icon" size="md" />
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-bold text-white tracking-tight">
@@ -887,18 +886,16 @@ export const DoctorOnboardingTutorial: React.FC<DoctorOnboardingTutorialProps> =
           {/* STEP 6: OR READINESS VERIFIED (GRADUATION)               */}
           {/* ======================================================== */}
           {currentStep === 6 && (
-            <div className="flex flex-col items-center text-center space-y-6 max-w-xl mx-auto py-2">
-              <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 border-2 border-emerald-500 flex items-center justify-center text-emerald-400 shadow-[0_0_40px_rgba(16,185,129,0.5)]">
-                <Award className="w-10 h-10" />
-              </div>
+            <div className="flex flex-col items-center text-center space-y-5 max-w-xl mx-auto py-2">
+              <SterileTouchLogo variant="full" size="sm" className="mb-1" />
 
               <div>
-                <h3 className="text-2xl font-bold text-white mb-2">
+                <h3 className="text-2xl font-bold text-white mb-1.5 tracking-tight">
                   Sterile Touchless Protocol Fully Verified
                 </h3>
-                <p className="text-xs text-slate-300 max-w-md mx-auto">
+                <p className="text-xs text-slate-300 max-w-md mx-auto leading-relaxed">
                   All 5 clinical interaction modalities have passed optical, temporal, and acoustic
-                  benchmarks. You are certified for sterile operation.
+                  benchmarks. Certified for sterile operative deployment.
                 </p>
               </div>
 

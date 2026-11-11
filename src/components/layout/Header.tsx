@@ -15,6 +15,7 @@ import { GestureDetectionResult } from '../../types/gestures';
 import { audioService } from '../../services/audioFeedback';
 import { VoiceIndicatorHUD } from '../hud/VoiceIndicatorHUD';
 import { GestureBadge } from '../hud/GestureBadge';
+import { SterileTouchLogo } from '../brand/SterileTouchLogo';
 
 interface HeaderProps {
   patient: PatientProfile;
@@ -67,20 +68,7 @@ export const Header: React.FC<HeaderProps> = ({
     <header className="h-14 bg-slate-950/95 border-b border-slate-800/80 px-4 flex items-center justify-between text-slate-200 z-30 select-none relative shadow-sm">
       {/* Left Section: Brand & Terminal Status */}
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.25)]">
-            <ShieldCheck className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-bold tracking-tight text-white text-base">SterileTouch</span>
-              <span className="text-[10px] font-mono uppercase bg-emerald-950/80 text-emerald-400 border border-emerald-800/60 px-1.5 py-0.2 rounded font-semibold">
-                OR Mode
-              </span>
-            </div>
-            <p className="text-[10px] text-slate-400 font-mono">Zero-Contact Surgical Terminal</p>
-          </div>
-        </div>
+        <SterileTouchLogo variant="badge" size="md" />
 
         <div className="h-6 w-px bg-slate-800 hidden sm:block" />
 
